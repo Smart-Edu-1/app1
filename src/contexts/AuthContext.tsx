@@ -13,6 +13,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<boolean>;
   register: (fullName: string, username: string, password: string, activationCode: string) => Promise<boolean>;
   logout: () => void;
+  enterAsGuest: () => void;
   isAuthenticated: boolean;
 }
 
@@ -101,11 +102,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('smartedu_user');
   };
 
+  const enterAsGuest = () => {
+    const guestUser = {
+      id: 'guest',
+      fullName: 'ضيف',
+      username: 'guest',
+      isAdmin: false
+    };
+    setUser(guestUser);
+  };
+
   const value: AuthContextType = {
     user,
     login,
     register,
     logout,
+    enterAsGuest,
     isAuthenticated: !!user
   };
 

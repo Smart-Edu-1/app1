@@ -16,11 +16,29 @@ interface ActivationCode {
   createdAt: string;
 }
 
+interface AppSettings {
+  appName: string;
+  aboutText: string;
+  subscriptionPrices: {
+    monthly: number;
+    quarterly: number;
+    yearly: number;
+  };
+  themeColors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
+  contactMethods: string[];
+}
+
 interface DataContextType {
   subjects: Subject[];
   codes: ActivationCode[];
+  settings: AppSettings;
   addCode: (code: string) => void;
   removeCode: (id: string) => void;
+  updateSettings: (newSettings: AppSettings) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -55,6 +73,29 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   ]);
 
   const [codes, setCodes] = useState<ActivationCode[]>([]);
+  
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    const savedSettings = localStorage.getItem('smartedu_settings');
+    return savedSettings ? JSON.parse(savedSettings) : {
+      appName: 'Smart Edu',
+      aboutText: 'منصة التعليم الذكية التي تهدف إلى تطوير مهارات الطلاب في المواد العلمية',
+      subscriptionPrices: {
+        monthly: 9.99,
+        quarterly: 24.99,
+        yearly: 89.99
+      },
+      themeColors: {
+        primary: '#3B82F6',
+        secondary: '#10B981',
+        accent: '#F59E0B'
+      },
+      contactMethods: [
+        'واتساب: +963 123 456 789',
+        'تليجرام: @smartedu_support',
+        'بريد إلكتروني: support@smartedu.com'
+      ]
+    };
+  });
 
   useEffect(() => {
     // Initialize default codes if none exist
@@ -100,11 +141,18 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     localStorage.setItem('smartedu_codes', JSON.stringify(updatedCodes));
   };
 
+  const updateSettings = (newSettings: AppSettings) => {
+    setSettings(newSettings);
+    localStorage.setItem('smartedu_settings', JSON.stringify(newSettings));
+  };
+
   const value: DataContextType = {
     subjects,
     codes,
+    settings,
     addCode,
-    removeCode
+    removeCode,
+    updateSettings
   };
 
   return (

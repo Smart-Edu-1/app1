@@ -1,8 +1,9 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Phone, Mail, MessageCircle } from 'lucide-react';
 import { useAppData } from '@/contexts/AppDataContext';
-import { MessageSquare, Phone, Mail } from 'lucide-react';
 
 const ContactPage: React.FC = () => {
   const { settings } = useAppData();
@@ -14,33 +15,29 @@ const ContactPage: React.FC = () => {
           <CardTitle className="text-center text-2xl">تواصل معنا</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <p className="text-lg">نحن هنا لمساعدتك! تواصل معنا عبر إحدى الطرق التالية:</p>
-            </div>
+          <div className="text-center space-y-6">
+            <p className="text-lg">نحن هنا لمساعدتك في أي وقت</p>
             
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {settings.contactMethods.map((method, index) => (
-                <div key={index} className="flex items-center p-4 bg-gray-50 rounded-lg">
-                  <div className="ml-4">
-                    {method.includes('واتساب') && <MessageSquare className="h-6 w-6 text-green-600" />}
-                    {method.includes('تليجرام') && <MessageSquare className="h-6 w-6 text-blue-600" />}
+                <div key={index} className="p-4 bg-blue-50 rounded-lg">
+                  <div className="flex items-center justify-center mb-2">
+                    {method.includes('واتساب') && <MessageCircle className="h-6 w-6 text-green-600" />}
+                    {method.includes('تليجرام') && <MessageCircle className="h-6 w-6 text-blue-600" />}
                     {method.includes('بريد') && <Mail className="h-6 w-6 text-red-600" />}
                     {method.includes('هاتف') && <Phone className="h-6 w-6 text-gray-600" />}
                   </div>
-                  <div>
-                    <p className="font-medium">{method}</p>
-                  </div>
+                  <p className="text-sm font-medium">{method}</p>
                 </div>
               ))}
             </div>
             
-            <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-              <h3 className="font-semibold mb-2">ساعات العمل</h3>
-              <p className="text-sm text-gray-600">
-                من السبت إلى الخميس: 9:00 صباحاً - 9:00 مساءً<br />
-                الجمعة: 2:00 ظهراً - 9:00 مساءً
-              </p>
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold mb-4">أوقات العمل</h3>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm">الأحد - الخميس: 9:00 صباحاً - 6:00 مساءً</p>
+                <p className="text-sm">الجمعة - السبت: 10:00 صباحاً - 4:00 مساءً</p>
+              </div>
             </div>
           </div>
         </CardContent>

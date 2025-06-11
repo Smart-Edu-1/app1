@@ -1,72 +1,37 @@
 
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppData } from '@/contexts/AppDataContext';
+import { Card, CardContent } from '@/components/ui/card';
+import { Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { LogOut, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import Header from '@/components/layout/Header';
+import AboutPage from './AboutPage';
+import ContactPage from './ContactPage';
+import PricingPage from './PricingPage';
+import SubjectPage from './SubjectPage';
+import LessonPage from './LessonPage';
+import QuizPage from './QuizPage';
 
 const HomePage = () => {
-  const { subjects } = useData();
-  const { user, logout } = useAuth();
+  const { subjects } = useAppData();
+  const { isGuest, isPremiumUser } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubjectClick = (subject: any) => {
-    if (user?.id === 'guest') {
-      toast({
-        title: "محتوى محدود",
-        description: "يجب تسجيل الدخول للوصول للمحتوى الكامل",
-        variant: "destructive"
-      });
-    } else {
-      toast({
-        title: `${subject.name}`,
-        description: "سيتم إضافة المحتوى قريباً",
-      });
-    }
-  };
-
-  const handleLogout = () => {
-    logout();
-    toast({
-      title: "تم تسجيل الخروج",
-      description: "شكراً لاستخدام Smart Edu"
-    });
+    navigate(`/app/subject/${subject.id}`);
   };
 
   return (
     <div className="container mx-auto p-6">
-      <header className="mb-8 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-center mb-2">Smart Edu</h1>
-          <p className="text-center text-muted-foreground">
-            مرحباً {user?.fullName || 'بك'} في منصة التعليم الذكية
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {user?.isAdmin && (
-            <Button 
-              variant="outline" 
-              onClick={() => window.location.href = '/admin'}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              لوحة التحكم
-            </Button>
-          )}
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" />
-            تسجيل الخروج
-          </Button>
-        </div>
-      </header>
-      
       <section>
-        <h2 className="text-xl font-semibold mb-4">المواد الدراسية</h2>
+        <h2 className="text-xl font-semibold mb-4 text-center">المواد الدراسية</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {subjects.map((subject) => (
+          {subjects.filter(s => s.isActive).sort((a, b) => a.order - b.order).map((subject) => (
             <Card 
               key={subject.id}
               className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
@@ -98,9 +63,16 @@ const HomePage = () => {
 const MainApp: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
+      <Header />
       <main>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/subject/:id" element={<SubjectPage />} />
+          <Route path="/lesson/:id" element={<LessonPage />} />
+          <Route path="/quiz/:id" element={<QuizPage />} />
         </Routes>
       </main>
     </div>

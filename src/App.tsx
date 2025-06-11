@@ -10,7 +10,7 @@ import MainApp from "./pages/MainApp";
 import AdminPanel from "./pages/AdminPanel";
 import RegisterPage from "./pages/RegisterPage";
 import { AuthProvider } from "./contexts/AuthContext";
-import { DataProvider } from "./contexts/DataContext";
+import { AppDataProvider } from "./contexts/AppDataContext";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -19,8 +19,8 @@ const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthProvider>
-          <DataProvider>
+        <AppDataProvider>
+          <AuthProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter>
@@ -32,8 +32,8 @@ const App: React.FC = () => {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
-          </DataProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </AppDataProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

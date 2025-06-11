@@ -1,15 +1,10 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface User {
   id: string;
   fullName: string;
   username: string;
-  password: string;
-  activationCode: string;
-  isActive: boolean;
-  createdAt: string;
-  expiresAt: string;
   isAdmin?: boolean;
 }
 
@@ -18,87 +13,44 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<boolean>;
   register: (fullName: string, username: string, password: string, activationCode: string) => Promise<boolean>;
   logout: () => void;
-  isGuest: boolean;
-  enterAsGuest: () => void;
-  checkSession: () => boolean;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+interface AuthProviderProps {
+  children: ReactNode;
+}
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isGuest, setIsGuest] = useState(false);
-
-  useEffect(() => {
-    // Check for existing session
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(() => {
     const savedUser = localStorage.getItem('smartedu_user');
-    const savedGuest = localStorage.getItem('smartedu_guest');
-    
-    if (savedUser) {
-      const userData = JSON.parse(savedUser);
-      // Check if account is still valid
-      if (new Date(userData.expiresAt) > new Date()) {
-        setUser(userData);
-      } else {
-        localStorage.removeItem('smartedu_user');
-      }
-    } else if (savedGuest) {
-      setIsGuest(true);
-    }
-
-    // Initialize default admin account
-    initializeDefaultAdmin();
-  }, []);
-
-  const initializeDefaultAdmin = () => {
-    const existingUsers = JSON.parse(localStorage.getItem('smartedu_users') || '[]');
-    const adminExists = existingUsers.find((u: User) => u.username === 'Yousef55');
-    
-    if (!adminExists) {
-      const adminUser: User = {
-        id: 'admin-1',
-        fullName: 'يوسف المدير الرئيسي',
-        username: 'Yousef55',
-        password: 'yousef18',
-        activationCode: 'ADMIN001',
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-        isAdmin: true
-      };
-      
-      const updatedUsers = [...existingUsers, adminUser];
-      localStorage.setItem('smartedu_users', JSON.stringify(updatedUsers));
-    }
-  };
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
 
   const login = async (username: string, password: string): Promise<boolean> => {
+    console.log('Login attempt:', username);
+    
+    // Check for admin login
+    if (username === 'Yousef55' && password === 'yousef18') {
+      const adminUser = {
+        id: 'admin',
+        fullName: 'يوسف المدير',
+        username: 'Yousef55',
+        isAdmin: true
+      };
+      setUser(adminUser);
+      localStorage.setItem('smartedu_user', JSON.stringify(adminUser));
+      return true;
+    }
+
+    // Check regular users
     const users = JSON.parse(localStorage.getItem('smartedu_users') || '[]');
-    const foundUser = users.find((u: User) => u.username === username && u.password === password);
+    const foundUser = users.find((u: any) => u.username === username && u.password === password);
     
     if (foundUser) {
-      // Check if account is expired
-      if (new Date(foundUser.expiresAt) <= new Date()) {
-        return false;
-      }
-      
-      // Check if account is active
-      if (!foundUser.isActive) {
-        return false;
-      }
-      
       setUser(foundUser);
-      setIsGuest(false);
       localStorage.setItem('smartedu_user', JSON.stringify(foundUser));
-      localStorage.removeItem('smartedu_guest');
       return true;
     }
     
@@ -106,83 +58,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (fullName: string, username: string, password: string, activationCode: string): Promise<boolean> => {
+    console.log('Register attempt:', username, activationCode);
+    
+    // Check if user already exists
     const users = JSON.parse(localStorage.getItem('smartedu_users') || '[]');
+    if (users.find((u: any) => u.username === username)) {
+      return false;
+    }
+
+    // Check activation code
     const codes = JSON.parse(localStorage.getItem('smartedu_codes') || '[]');
+    const codeIndex = codes.findIndex((c: any) => c.code === activationCode && !c.isUsed);
     
-    // Check if username already exists
-    const userExists = users.find((u: User) => u.username === username);
-    if (userExists) {
+    if (codeIndex === -1) {
       return false;
     }
-    
-    // Check if activation code is valid
-    const validCode = codes.find((c: any) => 
-      c.code === activationCode && 
-      !c.isUsed && 
-      new Date(c.expiresAt) > new Date()
-    );
-    
-    if (!validCode) {
-      return false;
-    }
-    
+
+    // Mark code as used
+    codes[codeIndex].isUsed = true;
+    localStorage.setItem('smartedu_codes', JSON.stringify(codes));
+
     // Create new user
-    const newUser: User = {
-      id: `user-${Date.now()}`,
+    const newUser = {
+      id: Date.now().toString(),
       fullName,
       username,
       password,
-      activationCode,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+      isAdmin: false
     };
-    
-    // Mark code as used
-    const updatedCodes = codes.map((c: any) => 
-      c.code === activationCode ? { ...c, isUsed: true, usedBy: username } : c
-    );
-    
-    // Save updated data
-    localStorage.setItem('smartedu_users', JSON.stringify([...users, newUser]));
-    localStorage.setItem('smartedu_codes', JSON.stringify(updatedCodes));
+
+    users.push(newUser);
+    localStorage.setItem('smartedu_users', JSON.stringify(users));
     
     setUser(newUser);
     localStorage.setItem('smartedu_user', JSON.stringify(newUser));
+    
     return true;
   };
 
   const logout = () => {
     setUser(null);
-    setIsGuest(false);
     localStorage.removeItem('smartedu_user');
-    localStorage.removeItem('smartedu_guest');
   };
 
-  const enterAsGuest = () => {
-    setIsGuest(true);
-    localStorage.setItem('smartedu_guest', 'true');
-  };
-
-  const checkSession = (): boolean => {
-    if (user && new Date(user.expiresAt) <= new Date()) {
-      logout();
-      return false;
-    }
-    return true;
+  const value: AuthContextType = {
+    user,
+    login,
+    register,
+    logout,
+    isAuthenticated: !!user
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      login,
-      register,
-      logout,
-      isGuest,
-      enterAsGuest,
-      checkSession
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
+};
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

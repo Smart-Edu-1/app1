@@ -80,7 +80,7 @@ const LoginPage = () => {
 
   if (showLogin) {
     return (
-      <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
@@ -88,6 +88,9 @@ const LoginPage = () => {
             </div>
             <CardTitle className="text-2xl font-bold">Smart Edu</CardTitle>
             <CardDescription>تسجيل الدخول إلى حسابك</CardDescription>
+            <p className="text-xs text-muted-foreground mt-2">
+              للدخول كمدير: اسم المستخدم "Yousef55" وكلمة المرور "yousef18"
+            </p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
@@ -148,7 +151,7 @@ const LoginPage = () => {
   }
 
   return (
-    <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center">

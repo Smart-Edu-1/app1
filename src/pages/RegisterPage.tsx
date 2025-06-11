@@ -14,9 +14,11 @@ const RegisterPage = () => {
     fullName: '',
     username: '',
     password: '',
+    confirmPassword: '',
     activationCode: ''
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   
   const navigate = useNavigate();
@@ -32,6 +34,27 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // التحقق من تطابق كلمة المرور
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "خطأ في كلمة المرور",
+        description: "كلمة المرور وتأكيدها غير متطابقتين",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // التحقق من قوة كلمة المرور
+    if (formData.password.length < 6) {
+      toast({
+        title: "كلمة مرور ضعيفة",
+        description: "يجب أن تكون كلمة المرور 6 أحرف على الأقل",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -51,7 +74,7 @@ const RegisterPage = () => {
       } else {
         toast({
           title: "خطأ في إنشاء الحساب",
-          description: "اسم المستخدم موجود أو كود التفعيل غير صحيح",
+          description: "اسم المستخدم موجود أو كود التفعيل غير صحيح أو مستخدم بالفعل",
           variant: "destructive"
         });
       }
@@ -67,7 +90,7 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
@@ -116,7 +139,7 @@ const RegisterPage = () => {
                   value={formData.password}
                   onChange={handleInputChange}
                   className="pr-10"
-                  placeholder="أدخل كلمة المرور"
+                  placeholder="أدخل كلمة المرور (6 أحرف على الأقل)"
                   required
                 />
                 <Button
@@ -127,6 +150,31 @@ const RegisterPage = () => {
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
+              <div className="relative mt-1">
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  className="pr-10"
+                  placeholder="أعد كتابة كلمة المرور"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
             </div>
@@ -143,6 +191,9 @@ const RegisterPage = () => {
                 placeholder="أدخل كود التفعيل"
                 required
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                أكواد تفعيل متاحة: EDU2024, SMART123
+              </p>
             </div>
             
             <Button 

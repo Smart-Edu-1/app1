@@ -4,14 +4,15 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 
-// ستحتاج لاستبدال هذه القيم بقيم مشروع Firebase الخاص بك
+// إعدادات Firebase بناءً على المعلومات الموجودة في الصورة
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY_HERE",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyD233UERpyR1W1GwBQaWrkWNl8VRo5z4kE",
+  authDomain: "ysmart-edu-app.firebaseapp.com",
+  projectId: "ysmart-edu-app",
+  storageBucket: "ysmart-edu-app.firebasestorage.app",
+  messagingSenderId: "882580783531",
+  appId: "1:882580783531:web:1c2810ffd7b7a9a45c12ee",
+  measurementId: "G-7K6DEV3TVZ"
 };
 
 const app = initializeApp(firebaseConfig);

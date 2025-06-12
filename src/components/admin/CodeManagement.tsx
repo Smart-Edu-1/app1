@@ -16,7 +16,6 @@ const CodeManagement = () => {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newCode, setNewCode] = useState('');
-  const [expiryMonths, setExpiryMonths] = useState(12);
 
   const activeCodes = codes.filter(code => !code.isUsed && code.isActive);
   const usedCodes = codes.filter(code => code.isUsed);
@@ -32,13 +31,10 @@ const CodeManagement = () => {
 
   const handleAddCode = () => {
     const code = newCode || generateRandomCode();
-    const expiryDate = new Date();
-    expiryDate.setMonth(expiryDate.getMonth() + expiryMonths);
 
     addCode({
       code,
       isUsed: false,
-      expiryDate: expiryDate.toISOString(),
       isActive: true
     });
 
@@ -94,17 +90,6 @@ const CodeManagement = () => {
                   placeholder="مثال: EDU2024"
                 />
               </div>
-              <div>
-                <Label htmlFor="expiry">مدة الصلاحية (بالشهور)</Label>
-                <Input
-                  id="expiry"
-                  type="number"
-                  value={expiryMonths}
-                  onChange={(e) => setExpiryMonths(parseInt(e.target.value))}
-                  min="1"
-                  max="60"
-                />
-              </div>
               <Button onClick={handleAddCode} className="w-full">
                 إنشاء الكود
               </Button>
@@ -150,7 +135,6 @@ const CodeManagement = () => {
               <TableRow>
                 <TableHead>الكود</TableHead>
                 <TableHead>تاريخ الإنشاء</TableHead>
-                <TableHead>تاريخ الانتهاء</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>مستخدم من قبل</TableHead>
                 <TableHead>الإجراءات</TableHead>
@@ -161,7 +145,6 @@ const CodeManagement = () => {
                 <TableRow key={code.id}>
                   <TableCell className="font-mono font-bold">{code.code}</TableCell>
                   <TableCell>{new Date(code.createdAt).toLocaleDateString('ar-SA')}</TableCell>
-                  <TableCell>{new Date(code.expiryDate).toLocaleDateString('ar-SA')}</TableCell>
                   <TableCell>
                     <Badge variant={code.isUsed ? "secondary" : "default"}>
                       {code.isUsed ? 'مستخدم' : 'متاح'}

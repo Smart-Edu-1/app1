@@ -17,6 +17,7 @@ export interface Subject {
   description: string;
   icon: string;
   color: string;
+  imageUrl?: string;
   order: number;
   isActive: boolean;
 }
@@ -26,6 +27,7 @@ export interface Unit {
   subjectId: string;
   name: string;
   description: string;
+  imageUrl?: string;
   order: number;
   isActive: boolean;
 }
@@ -36,6 +38,7 @@ export interface Lesson {
   name: string;
   description: string;
   videoUrl: string;
+  imageUrl?: string;
   isPremium: boolean;
   order: number;
   teacherContact?: string;
@@ -47,6 +50,7 @@ export interface Quiz {
   unitId: string;
   name: string;
   description: string;
+  imageUrl?: string;
   isPremium: boolean;
   order: number;
   isActive: boolean;
@@ -69,7 +73,6 @@ export interface ActivationCode {
   isUsed: boolean;
   usedBy?: string;
   createdAt: string;
-  expiryDate: string;
   isActive: boolean;
 }
 
@@ -82,14 +85,22 @@ export interface Notification {
   userId?: string;
 }
 
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  duration: number; // in months
+  features: string[];
+  isActive: boolean;
+  order: number;
+}
+
 export interface AppSettings {
   appName: string;
   aboutText: string;
-  subscriptionPrices: {
-    monthly: number;
-    quarterly: number;
-    yearly: number;
-  };
+  subscriptionPlans: SubscriptionPlan[];
   themeColors: {
     primary: string;
     secondary: string;

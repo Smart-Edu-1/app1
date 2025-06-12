@@ -4,16 +4,20 @@ import { Routes, Route, useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen, Users, FileText, Star, Bell, Settings, LogOut, BarChart3 } from 'lucide-react';
+import { BookOpen, Users, FileText, Star, Bell, Settings, LogOut, BarChart3, Layers, Play, HelpCircle } from 'lucide-react';
 import { useAppData } from '@/contexts/AppDataContext';
 import { useToast } from '@/hooks/use-toast';
 import UserManagement from '@/components/admin/UserManagement';
 import CodeManagement from '@/components/admin/CodeManagement';
 import SubjectManagement from '@/components/admin/SubjectManagement';
+import UnitManagement from '@/components/admin/UnitManagement';
+import LessonManagement from '@/components/admin/LessonManagement';
+import QuizManagement from '@/components/admin/QuizManagement';
 import NotificationManagement from '@/components/admin/NotificationManagement';
+import SettingsManagement from '@/components/admin/SettingsManagement';
 
 const AdminDashboard = () => {
-  const { subjects, codes, users, notifications } = useAppData();
+  const { subjects, codes, users, notifications, units, lessons, quizzes } = useAppData();
   
   const usersCount = users.filter(user => !user.isAdmin).length;
   const activeCodes = codes.filter(code => !code.isUsed && code.isActive).length;
@@ -33,6 +37,24 @@ const AdminDashboard = () => {
       description: 'إجمالي المواد الدراسية'
     },
     {
+      title: 'الوحدات التعليمية',
+      value: units.length,
+      icon: <Layers className="h-6 w-6 text-green-500" />,
+      description: 'إجمالي الوحدات'
+    },
+    {
+      title: 'الدروس',
+      value: lessons.length,
+      icon: <Play className="h-6 w-6 text-purple-500" />,
+      description: 'إجمالي الدروس التعليمية'
+    },
+    {
+      title: 'الاختبارات',
+      value: quizzes.length,
+      icon: <HelpCircle className="h-6 w-6 text-yellow-500" />,
+      description: 'إجمالي الاختبارات'
+    },
+    {
       title: 'أكواد التفعيل المتاحة',
       value: activeCodes,
       icon: <Star className="h-6 w-6 text-orange-500" />,
@@ -49,24 +71,24 @@ const AdminDashboard = () => {
   return (
     <div>
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-center">لوحة تحكم المشرف الرئيسية</h1>
+        <h1 className="text-3xl font-bold text-center">لوحة تحكم Smart Edu</h1>
         <p className="text-center text-muted-foreground mt-2">
           نظرة عامة على النظام
         </p>
       </header>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {statsCards.map((card, index) => (
           <Card key={index}>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{card.title}</CardTitle>
+                <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
                 {card.icon}
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{card.value}</p>
-              <p className="text-sm text-muted-foreground">{card.description}</p>
+              <p className="text-2xl font-bold">{card.value}</p>
+              <p className="text-xs text-muted-foreground">{card.description}</p>
             </CardContent>
           </Card>
         ))}
@@ -82,6 +104,9 @@ const AdminSidebar = () => {
     { path: '/admin', label: 'الرئيسية', icon: <BarChart3 className="h-5 w-5" /> },
     { path: '/admin/users', label: 'إدارة المستخدمين', icon: <Users className="h-5 w-5" /> },
     { path: '/admin/subjects', label: 'إدارة المواد', icon: <BookOpen className="h-5 w-5" /> },
+    { path: '/admin/units', label: 'إدارة الوحدات', icon: <Layers className="h-5 w-5" /> },
+    { path: '/admin/lessons', label: 'إدارة الدروس', icon: <Play className="h-5 w-5" /> },
+    { path: '/admin/quizzes', label: 'إدارة الاختبارات', icon: <HelpCircle className="h-5 w-5" /> },
     { path: '/admin/codes', label: 'أكواد التفعيل', icon: <Star className="h-5 w-5" /> },
     { path: '/admin/notifications', label: 'الإشعارات', icon: <Bell className="h-5 w-5" /> },
     { path: '/admin/settings', label: 'الإعدادات', icon: <Settings className="h-5 w-5" /> }
@@ -155,8 +180,12 @@ const AdminPanel: React.FC = () => {
           <Route path="/" element={<AdminDashboard />} />
           <Route path="/users" element={<UserManagement />} />
           <Route path="/subjects" element={<SubjectManagement />} />
+          <Route path="/units" element={<UnitManagement />} />
+          <Route path="/lessons" element={<LessonManagement />} />
+          <Route path="/quizzes" element={<QuizManagement />} />
           <Route path="/codes" element={<CodeManagement />} />
           <Route path="/notifications" element={<NotificationManagement />} />
+          <Route path="/settings" element={<SettingsManagement />} />
         </Routes>
       </div>
     </div>

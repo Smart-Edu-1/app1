@@ -58,8 +58,8 @@ const VideoProtection: React.FC<{ children: React.ReactNode }> = ({ children }) 
     // إضافة CSS لمنع التحديد
     document.body.style.userSelect = 'none';
     document.body.style.webkitUserSelect = 'none';
-    document.body.style.mozUserSelect = 'none';
-    document.body.style.msUserSelect = 'none';
+    (document.body.style as any).MozUserSelect = 'none';
+    (document.body.style as any).msUserSelect = 'none';
 
     return () => {
       document.removeEventListener('contextmenu', handleContextMenu);
@@ -70,8 +70,8 @@ const VideoProtection: React.FC<{ children: React.ReactNode }> = ({ children }) 
       // إعادة تعيين CSS
       document.body.style.userSelect = '';
       document.body.style.webkitUserSelect = '';
-      document.body.style.mozUserSelect = '';
-      document.body.style.msUserSelect = '';
+      (document.body.style as any).MozUserSelect = '';
+      (document.body.style as any).msUserSelect = '';
     };
   }, []);
 

@@ -4,15 +4,14 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 
+// ستحتاج لاستبدال هذه القيم بقيم مشروع Firebase الخاص بك
 const firebaseConfig = {
-  // These would normally come from environment variables
-  // For demo purposes, using placeholder values
-  apiKey: "demo-api-key",
-  authDomain: "smart-edu-demo.firebaseapp.com",
-  projectId: "smart-edu-demo",
-  storageBucket: "smart-edu-demo.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456"
+  apiKey: "YOUR_API_KEY_HERE",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);

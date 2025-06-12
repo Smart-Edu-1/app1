@@ -8,9 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2, BookOpen } from 'lucide-react';
 import { useAppData } from '@/contexts/AppDataContext';
 import { useToast } from '@/hooks/use-toast';
+import ImageUpload from '@/components/ui/image-upload';
 
 const SubjectManagement = () => {
   const { subjects, addSubject, updateSubject, deleteSubject } = useAppData();
@@ -21,7 +23,10 @@ const SubjectManagement = () => {
     name: '',
     description: '',
     icon: '',
-    color: '#3B82F6'
+    color: '#3B82F6',
+    imageUrl: '',
+    order: 1,
+    isActive: true
   });
 
   const handleSubmit = () => {
@@ -32,11 +37,7 @@ const SubjectManagement = () => {
         description: "تم حفظ التغييرات بنجاح"
       });
     } else {
-      addSubject({
-        ...formData,
-        order: subjects.length + 1,
-        isActive: true
-      });
+      addSubject(formData);
       toast({
         title: "تم إضافة المادة",
         description: "تم إنشاء المادة الجديدة بنجاح"
@@ -45,7 +46,15 @@ const SubjectManagement = () => {
     
     setIsDialogOpen(false);
     setEditingSubject(null);
-    setFormData({ name: '', description: '', icon: '', color: '#3B82F6' });
+    setFormData({ 
+      name: '', 
+      description: '', 
+      icon: '', 
+      color: '#3B82F6', 
+      imageUrl: '', 
+      order: 1, 
+      isActive: true 
+    });
   };
 
   const handleEdit = (subject: any) => {
@@ -54,7 +63,10 @@ const SubjectManagement = () => {
       name: subject.name,
       description: subject.description,
       icon: subject.icon,
-      color: subject.color
+      color: subject.color,
+      imageUrl: subject.imageUrl || '',
+      order: subject.order,
+      isActive: subject.isActive
     });
     setIsDialogOpen(true);
   };
@@ -72,7 +84,7 @@ const SubjectManagement = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">إدارة المواد الدراسية</h2>
+        <h2 className="text-2xl font-bold">إدارة المواد</h2>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -80,7 +92,7 @@ const SubjectManagement = () => {
               إضافة مادة جديدة
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingSubject ? 'تعديل المادة' : 'إضافة مادة جديدة'}
@@ -106,7 +118,7 @@ const SubjectManagement = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="icon">الأيقونة (رمز تعبيري)</Label>
+                <Label htmlFor="icon">رمز المادة (إيموجي)</Label>
                 <Input
                   id="icon"
                   value={formData.icon}
@@ -115,13 +127,38 @@ const SubjectManagement = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="color">اللون</Label>
+                <Label htmlFor="color">لون المادة</Label>
                 <Input
                   id="color"
                   type="color"
                   value={formData.color}
                   onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                 />
+              </div>
+              <ImageUpload
+                currentImageUrl={formData.imageUrl}
+                onImageChange={(imageUrl) => setFormData({ ...formData, imageUrl })}
+                folder="subjects"
+                label="صورة غلاف المادة"
+                aspectRatio="600x375"
+              />
+              <div>
+                <Label htmlFor="order">ترتيب المادة</Label>
+                <Input
+                  id="order"
+                  type="number"
+                  value={formData.order}
+                  onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
+                  min="1"
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isActive"
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+                />
+                <Label htmlFor="isActive">نشط</Label>
               </div>
               <Button onClick={handleSubmit} className="w-full">
                 {editingSubject ? 'حفظ التغييرات' : 'إضافة المادة'}
@@ -135,17 +172,18 @@ const SubjectManagement = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <BookOpen className="ml-2 h-5 w-5" />
-            المواد الدراسية ({subjects.length})
+            المواد ({subjects.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>الأيقونة</TableHead>
+                <TableHead>الصورة</TableHead>
                 <TableHead>اسم المادة</TableHead>
-                <TableHead>الوصف</TableHead>
+                <TableHead>الرمز</TableHead>
                 <TableHead>اللون</TableHead>
+                <TableHead>الترتيب</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>الإجراءات</TableHead>
               </TableRow>
@@ -154,24 +192,27 @@ const SubjectManagement = () => {
               {subjects.map((subject) => (
                 <TableRow key={subject.id}>
                   <TableCell>
-                    <div 
-                      className="w-10 h-10 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: `${subject.color}20` }}
-                    >
-                      <span className="text-lg">{subject.icon}</span>
-                    </div>
+                    {subject.imageUrl ? (
+                      <img 
+                        src={subject.imageUrl} 
+                        alt={subject.name}
+                        className="w-12 h-8 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-12 h-8 bg-gray-200 rounded flex items-center justify-center">
+                        <span className="text-xs text-gray-500">لا توجد</span>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="font-medium">{subject.name}</TableCell>
-                  <TableCell>{subject.description}</TableCell>
+                  <TableCell className="text-2xl">{subject.icon}</TableCell>
                   <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <div 
-                        className="w-6 h-6 rounded-full border"
-                        style={{ backgroundColor: subject.color }}
-                      />
-                      <span className="text-sm font-mono">{subject.color}</span>
-                    </div>
+                    <div 
+                      className="w-6 h-6 rounded-full border"
+                      style={{ backgroundColor: subject.color }}
+                    />
                   </TableCell>
+                  <TableCell>{subject.order}</TableCell>
                   <TableCell>
                     <Badge variant={subject.isActive ? "default" : "secondary"}>
                       {subject.isActive ? 'نشط' : 'معطل'}

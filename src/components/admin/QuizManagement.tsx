@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2, FileText, HelpCircle } from 'lucide-react';
 import { useAppData } from '@/contexts/AppDataContext';
 import { useToast } from '@/hooks/use-toast';
+import ImageUpload from '@/components/ui/image-upload';
 
 const QuizManagement = () => {
   const { quizzes, questions, units, subjects, addQuiz, updateQuiz, deleteQuiz, addQuestion, deleteQuestion, getQuestionsByQuiz } = useAppData();
@@ -24,6 +25,7 @@ const QuizManagement = () => {
     name: '',
     description: '',
     unitId: '',
+    imageUrl: '',
     isPremium: false,
     order: 1,
     isActive: true
@@ -59,6 +61,7 @@ const QuizManagement = () => {
       name: '', 
       description: '', 
       unitId: '', 
+      imageUrl: '', 
       isPremium: false, 
       order: 1, 
       isActive: true 
@@ -98,6 +101,7 @@ const QuizManagement = () => {
       name: quiz.name,
       description: quiz.description,
       unitId: quiz.unitId,
+      imageUrl: quiz.imageUrl || '',
       isPremium: quiz.isPremium,
       order: quiz.order,
       isActive: quiz.isActive
@@ -132,7 +136,7 @@ const QuizManagement = () => {
                 إضافة سؤال
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>إضافة سؤال جديد</DialogTitle>
               </DialogHeader>
@@ -227,15 +231,13 @@ const QuizManagement = () => {
                   </div>
                 )}
                 
-                <div>
-                  <Label htmlFor="imageUrl">رابط الصورة (اختياري)</Label>
-                  <Input
-                    id="imageUrl"
-                    value={questionFormData.imageUrl}
-                    onChange={(e) => setQuestionFormData({ ...questionFormData, imageUrl: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
-                  />
-                </div>
+                <ImageUpload
+                  currentImageUrl={questionFormData.imageUrl}
+                  onImageChange={(imageUrl) => setQuestionFormData({ ...questionFormData, imageUrl })}
+                  folder="questions"
+                  label="صورة السؤال (اختياري)"
+                  aspectRatio="600x375"
+                />
                 
                 <Button onClick={handleQuestionSubmit} className="w-full" disabled={!selectedQuizId}>
                   إضافة السؤال
@@ -251,7 +253,7 @@ const QuizManagement = () => {
                 إضافة اختبار جديد
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editingQuiz ? 'تعديل الاختبار' : 'إضافة اختبار جديد'}
@@ -295,6 +297,13 @@ const QuizManagement = () => {
                     placeholder="وصف مختصر عن الاختبار"
                   />
                 </div>
+                <ImageUpload
+                  currentImageUrl={quizFormData.imageUrl}
+                  onImageChange={(imageUrl) => setQuizFormData({ ...quizFormData, imageUrl })}
+                  folder="quizzes"
+                  label="صورة غلاف الاختبار"
+                  aspectRatio="600x375"
+                />
                 <div>
                   <Label htmlFor="order">ترتيب الاختبار</Label>
                   <Input
@@ -333,6 +342,7 @@ const QuizManagement = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>الصورة</TableHead>
                 <TableHead>اسم الاختبار</TableHead>
                 <TableHead>الوحدة</TableHead>
                 <TableHead>عدد الأسئلة</TableHead>
@@ -348,6 +358,19 @@ const QuizManagement = () => {
                 const questionCount = getQuestionsByQuiz(quiz.id).length;
                 return (
                   <TableRow key={quiz.id}>
+                    <TableCell>
+                      {quiz.imageUrl ? (
+                        <img 
+                          src={quiz.imageUrl} 
+                          alt={quiz.name}
+                          className="w-12 h-8 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-12 h-8 bg-gray-200 rounded flex items-center justify-center">
+                          <span className="text-xs text-gray-500">لا توجد</span>
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">{quiz.name}</TableCell>
                     <TableCell>
                       {subject?.name} - {unit?.name || 'غير محدد'}

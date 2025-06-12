@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2, Play } from 'lucide-react';
 import { useAppData } from '@/contexts/AppDataContext';
 import { useToast } from '@/hooks/use-toast';
+import ImageUpload from '@/components/ui/image-upload';
 
 const LessonManagement = () => {
   const { lessons, units, subjects, addLesson, updateLesson, deleteLesson } = useAppData();
@@ -23,6 +24,7 @@ const LessonManagement = () => {
     description: '',
     unitId: '',
     videoUrl: '',
+    imageUrl: '',
     isPremium: false,
     order: 1,
     teacherContact: '',
@@ -51,6 +53,7 @@ const LessonManagement = () => {
       description: '', 
       unitId: '', 
       videoUrl: '', 
+      imageUrl: '', 
       isPremium: false, 
       order: 1, 
       teacherContact: '', 
@@ -65,6 +68,7 @@ const LessonManagement = () => {
       description: lesson.description,
       unitId: lesson.unitId,
       videoUrl: lesson.videoUrl,
+      imageUrl: lesson.imageUrl || '',
       isPremium: lesson.isPremium,
       order: lesson.order,
       teacherContact: lesson.teacherContact || '',
@@ -94,7 +98,7 @@ const LessonManagement = () => {
               إضافة درس جديد
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingLesson ? 'تعديل الدرس' : 'إضافة درس جديد'}
@@ -147,6 +151,13 @@ const LessonManagement = () => {
                   placeholder="https://example.com/video.mp4"
                 />
               </div>
+              <ImageUpload
+                currentImageUrl={formData.imageUrl}
+                onImageChange={(imageUrl) => setFormData({ ...formData, imageUrl })}
+                folder="lessons"
+                label="صورة غلاف الدرس"
+                aspectRatio="600x375"
+              />
               <div>
                 <Label htmlFor="teacherContact">تواصل مع المدرس</Label>
                 <Input
@@ -193,6 +204,7 @@ const LessonManagement = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>الصورة</TableHead>
                 <TableHead>اسم الدرس</TableHead>
                 <TableHead>الوحدة</TableHead>
                 <TableHead>النوع</TableHead>
@@ -207,6 +219,19 @@ const LessonManagement = () => {
                 const subject = unit ? subjects.find(s => s.id === unit.subjectId) : null;
                 return (
                   <TableRow key={lesson.id}>
+                    <TableCell>
+                      {lesson.imageUrl ? (
+                        <img 
+                          src={lesson.imageUrl} 
+                          alt={lesson.name}
+                          className="w-12 h-8 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-12 h-8 bg-gray-200 rounded flex items-center justify-center">
+                          <span className="text-xs text-gray-500">لا توجد</span>
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">{lesson.name}</TableCell>
                     <TableCell>
                       {subject?.name} - {unit?.name || 'غير محدد'}

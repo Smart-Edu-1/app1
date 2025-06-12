@@ -8,9 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2, Layers } from 'lucide-react';
 import { useAppData } from '@/contexts/AppDataContext';
 import { useToast } from '@/hooks/use-toast';
+import ImageUpload from '@/components/ui/image-upload';
 
 const UnitManagement = () => {
   const { units, subjects, addUnit, updateUnit, deleteUnit } = useAppData();
@@ -21,6 +23,7 @@ const UnitManagement = () => {
     name: '',
     description: '',
     subjectId: '',
+    imageUrl: '',
     order: 1,
     isActive: true
   });
@@ -42,7 +45,14 @@ const UnitManagement = () => {
     
     setIsDialogOpen(false);
     setEditingUnit(null);
-    setFormData({ name: '', description: '', subjectId: '', order: 1, isActive: true });
+    setFormData({ 
+      name: '', 
+      description: '', 
+      subjectId: '', 
+      imageUrl: '', 
+      order: 1, 
+      isActive: true 
+    });
   };
 
   const handleEdit = (unit: any) => {
@@ -51,6 +61,7 @@ const UnitManagement = () => {
       name: unit.name,
       description: unit.description,
       subjectId: unit.subjectId,
+      imageUrl: unit.imageUrl || '',
       order: unit.order,
       isActive: unit.isActive
     });
@@ -70,7 +81,7 @@ const UnitManagement = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">إدارة الوحدات التعليمية</h2>
+        <h2 className="text-2xl font-bold">إدارة الوحدات</h2>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -78,7 +89,7 @@ const UnitManagement = () => {
               إضافة وحدة جديدة
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingUnit ? 'تعديل الوحدة' : 'إضافة وحدة جديدة'}
@@ -86,7 +97,7 @@ const UnitManagement = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="subjectId">المادة الدراسية</Label>
+                <Label htmlFor="subjectId">المادة</Label>
                 <select
                   id="subjectId"
                   value={formData.subjectId}
@@ -107,7 +118,7 @@ const UnitManagement = () => {
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="مثال: الوحدة الأولى"
+                  placeholder="مثال: الكهرباء والمغناطيسية"
                 />
               </div>
               <div>
@@ -119,6 +130,13 @@ const UnitManagement = () => {
                   placeholder="وصف مختصر عن الوحدة"
                 />
               </div>
+              <ImageUpload
+                currentImageUrl={formData.imageUrl}
+                onImageChange={(imageUrl) => setFormData({ ...formData, imageUrl })}
+                folder="units"
+                label="صورة غلاف الوحدة"
+                aspectRatio="600x375"
+              />
               <div>
                 <Label htmlFor="order">ترتيب الوحدة</Label>
                 <Input
@@ -128,6 +146,14 @@ const UnitManagement = () => {
                   onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
                   min="1"
                 />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isActive"
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+                />
+                <Label htmlFor="isActive">نشط</Label>
               </div>
               <Button onClick={handleSubmit} className="w-full">
                 {editingUnit ? 'حفظ التغييرات' : 'إضافة الوحدة'}
@@ -141,16 +167,16 @@ const UnitManagement = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Layers className="ml-2 h-5 w-5" />
-            الوحدات التعليمية ({units.length})
+            الوحدات ({units.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>الصورة</TableHead>
                 <TableHead>اسم الوحدة</TableHead>
                 <TableHead>المادة</TableHead>
-                <TableHead>الوصف</TableHead>
                 <TableHead>الترتيب</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>الإجراءات</TableHead>
@@ -161,9 +187,21 @@ const UnitManagement = () => {
                 const subject = subjects.find(s => s.id === unit.subjectId);
                 return (
                   <TableRow key={unit.id}>
+                    <TableCell>
+                      {unit.imageUrl ? (
+                        <img 
+                          src={unit.imageUrl} 
+                          alt={unit.name}
+                          className="w-12 h-8 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-12 h-8 bg-gray-200 rounded flex items-center justify-center">
+                          <span className="text-xs text-gray-500">لا توجد</span>
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">{unit.name}</TableCell>
                     <TableCell>{subject?.name || 'غير محدد'}</TableCell>
-                    <TableCell>{unit.description}</TableCell>
                     <TableCell>{unit.order}</TableCell>
                     <TableCell>
                       <Badge variant={unit.isActive ? "default" : "secondary"}>

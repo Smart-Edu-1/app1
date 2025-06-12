@@ -11,10 +11,10 @@ import AdminPanel from "./pages/AdminPanel";
 import RegisterPage from "./pages/RegisterPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AppDataProvider } from "./contexts/AppDataContext";
+import { FirebaseAppDataProvider } from "./contexts/FirebaseAppDataContext";
 import NotFound from "./pages/NotFound";
 
 const App: React.FC = () => {
-  // Create QueryClient inside the component to ensure React is properly initialized
   const [queryClient] = React.useState(() => new QueryClient({
     defaultOptions: {
       queries: {
@@ -27,21 +27,23 @@ const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AppDataProvider>
-          <AuthProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/app/*" element={<MainApp />} />
-                <Route path="/admin/*" element={<AdminPanel />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </AuthProvider>
-        </AppDataProvider>
+        <FirebaseAppDataProvider>
+          <AppDataProvider>
+            <AuthProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/app/*" element={<MainApp />} />
+                  <Route path="/admin/*" element={<AdminPanel />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </AuthProvider>
+          </AppDataProvider>
+        </FirebaseAppDataProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

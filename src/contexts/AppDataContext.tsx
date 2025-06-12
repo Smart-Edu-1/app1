@@ -65,11 +65,41 @@ const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 const defaultSettings: AppSettings = {
   appName: 'Smart Edu',
   aboutText: 'منصة التعليم الذكية التي تهدف إلى تطوير مهارات الطلاب في المواد العلمية',
-  subscriptionPrices: {
-    monthly: 9.99,
-    quarterly: 24.99,
-    yearly: 89.99
-  },
+  subscriptionPlans: [
+    {
+      id: '1',
+      name: 'الخطة الأساسية',
+      description: 'الوصول إلى المحتوى الأساسي',
+      price: 9.99,
+      currency: 'USD',
+      duration: 1,
+      features: ['الوصول إلى جميع الدروس المجانية', 'دعم فني أساسي', 'تحديثات المحتوى'],
+      isActive: true,
+      order: 1
+    },
+    {
+      id: '2',
+      name: 'الخطة المتقدمة',
+      description: 'الوصول الكامل إلى جميع المميزات',
+      price: 24.99,
+      currency: 'USD',
+      duration: 3,
+      features: ['الوصول إلى جميع الدروس', 'الاختبارات التفاعلية', 'دعم فني متقدم', 'تحميل المواد للمراجعة'],
+      isActive: true,
+      order: 2
+    },
+    {
+      id: '3',
+      name: 'الخطة السنوية',
+      description: 'أفضل قيمة مع الوصول الكامل',
+      price: 89.99,
+      currency: 'USD',
+      duration: 12,
+      features: ['جميع مميزات الخطة المتقدمة', 'جلسات فردية مع المدرسين', 'شهادات إتمام', 'وصول مدى الحياة للمحتوى المحدث'],
+      isActive: true,
+      order: 3
+    }
+  ],
   themeColors: {
     primary: '#3B82F6',
     secondary: '#10B981',

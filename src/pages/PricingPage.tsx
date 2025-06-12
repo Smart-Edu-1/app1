@@ -8,6 +8,27 @@ import { useAppData } from '@/contexts/AppDataContext';
 const PricingPage: React.FC = () => {
   const { settings } = useAppData();
 
+  // Ensure subscriptionPlans exists and is an array
+  const subscriptionPlans = settings?.subscriptionPlans || [];
+
+  if (subscriptionPlans.length === 0) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-center text-2xl">أسعار الاشتراك</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center space-y-8">
+              <p className="text-lg">لا توجد خطط اشتراك متاحة حالياً</p>
+              <p className="text-sm text-gray-600">يرجى المحاولة لاحقاً أو التواصل مع الدعم الفني</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-6">
       <Card>
@@ -19,7 +40,7 @@ const PricingPage: React.FC = () => {
             <p className="text-lg">اختر الخطة التي تناسبك للحصول على أفضل تجربة تعليمية</p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {settings.subscriptionPlans.map((plan, index) => (
+              {subscriptionPlans.map((plan, index) => (
                 <Card 
                   key={plan.id} 
                   className={`border-2 hover:border-primary transition-colors ${

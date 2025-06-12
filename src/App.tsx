@@ -13,9 +13,17 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { AppDataProvider } from "./contexts/AppDataContext";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
-
 const App: React.FC = () => {
+  // Create QueryClient inside the component to ensure React is properly initialized
+  const [queryClient] = React.useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        retry: 1,
+      },
+    },
+  }));
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

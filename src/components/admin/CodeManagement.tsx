@@ -8,11 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Plus, Copy, Trash2 } from 'lucide-react';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useFirebaseAppData } from '@/contexts/FirebaseAppDataContext';
 import { useToast } from '@/hooks/use-toast';
 
 const CodeManagement = () => {
-  const { codes, addCode, deleteCode } = useAppData();
+  const { codes, addCode, deleteCode } = useFirebaseAppData();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newCode, setNewCode] = useState('');
@@ -29,13 +29,19 @@ const CodeManagement = () => {
     return result;
   };
 
-  const handleAddCode = () => {
+  const handleAddCode = async () => {
     const code = newCode || generateRandomCode();
+    
+    // تحديد تاريخ انتهاء الصلاحية (سنة واحدة من الآن)
+    const expiryDate = new Date();
+    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
-    addCode({
+    await addCode({
       code,
       isUsed: false,
-      isActive: true
+      isActive: true,
+      expiryDate: expiryDate.toISOString(),
+      createdAt: new Date().toISOString()
     });
 
     toast({
@@ -47,9 +53,9 @@ const CodeManagement = () => {
     setIsDialogOpen(false);
   };
 
-  const handleDeleteCode = (codeId: string) => {
+  const handleDeleteCode = async (codeId: string) => {
     if (confirm('هل أنت متأكد من حذف هذا الكود؟')) {
-      deleteCode(codeId);
+      await deleteCode(codeId);
       toast({
         title: "تم حذف الكود",
         description: "تم حذف الكود بنجاح"
@@ -135,6 +141,7 @@ const CodeManagement = () => {
               <TableRow>
                 <TableHead>الكود</TableHead>
                 <TableHead>تاريخ الإنشاء</TableHead>
+                <TableHead>تاريخ الانتهاء</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>مستخدم من قبل</TableHead>
                 <TableHead>الإجراءات</TableHead>
@@ -145,6 +152,7 @@ const CodeManagement = () => {
                 <TableRow key={code.id}>
                   <TableCell className="font-mono font-bold">{code.code}</TableCell>
                   <TableCell>{new Date(code.createdAt).toLocaleDateString('ar-SA')}</TableCell>
+                  <TableCell>{new Date(code.expiryDate).toLocaleDateString('ar-SA')}</TableCell>
                   <TableCell>
                     <Badge variant={code.isUsed ? "secondary" : "default"}>
                       {code.isUsed ? 'مستخدم' : 'متاح'}

@@ -1,6 +1,25 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  User as FirebaseUser
+} from 'firebase/auth';
+import { 
+  doc, 
+  setDoc, 
+  getDoc, 
+  collection, 
+  query, 
+  where, 
+  getDocs,
+  updateDoc
+} from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 import { User } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: User | null;
@@ -11,6 +30,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isGuest: boolean;
   isPremiumUser: boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,112 +40,161 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    const savedUser = localStorage.getItem('smartedu_current_user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // جلب بيانات المستخدم من Firestore
+        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data() as User;
+          setUser(userData);
+        }
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const login = async (username: string, password: string): Promise<{ success: boolean; message?: string }> => {
-    console.log('Login attempt:', username);
-    
-    // Check for admin login
-    const settings = JSON.parse(localStorage.getItem('smartedu_settings_v2') || '{}');
-    if (username === settings.adminCredentials?.username && password === settings.adminCredentials?.password) {
-      const adminUser: User = {
-        id: 'admin',
-        fullName: 'المدير الرئيسي',
-        username: settings.adminCredentials.username,
-        password: settings.adminCredentials.password,
-        isAdmin: true,
-        createdAt: new Date().toISOString(),
-        expiryDate: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000).toISOString(), // 10 years
-        isActive: true
-      };
-      setUser(adminUser);
-      localStorage.setItem('smartedu_current_user', JSON.stringify(adminUser));
+    try {
+      setLoading(true);
+      
+      // البحث عن المستخدم باستخدام اسم المستخدم
+      const usersQuery = query(
+        collection(db, 'users'), 
+        where('username', '==', username)
+      );
+      const querySnapshot = await getDocs(usersQuery);
+      
+      if (querySnapshot.empty) {
+        return { success: false, message: 'اسم المستخدم غير موجود' };
+      }
+
+      const userDoc = querySnapshot.docs[0];
+      const userData = userDoc.data() as User;
+      
+      // التحقق من كلمة المرور المحفوظة في Firestore
+      if (userData.password !== password) {
+        return { success: false, message: 'كلمة المرور غير صحيحة' };
+      }
+
+      // التحقق من حالة الحساب
+      if (!userData.isActive) {
+        return { success: false, message: 'الحساب معطل، تواصل مع فريق الدعم' };
+      }
+
+      // التحقق من انتهاء الصلاحية
+      const now = new Date();
+      const expiryDate = new Date(userData.expiryDate);
+      if (now > expiryDate) {
+        return { success: false, message: 'الحساب منتهي الصلاحية، تواصل مع فريق الدعم' };
+      }
+
+      // تسجيل الدخول باستخدام Firebase Auth
+      const email = `${username}@smartedu.app`; // إنشاء email وهمي
+      await signInWithEmailAndPassword(auth, email, password);
+      
+      setUser(userData);
       return { success: true };
+    } catch (error: any) {
+      console.error('Login error:', error);
+      return { success: false, message: 'حدث خطأ أثناء تسجيل الدخول' };
+    } finally {
+      setLoading(false);
     }
-
-    // Check regular users
-    const users = JSON.parse(localStorage.getItem('smartedu_users_v2') || '[]');
-    const foundUser = users.find((u: User) => u.username === username && u.password === password);
-    
-    if (!foundUser) {
-      return { success: false, message: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
-    }
-
-    // Check if account is active
-    if (!foundUser.isActive) {
-      return { success: false, message: 'الحساب معطل، تواصل مع فريق الدعم' };
-    }
-
-    // Check if account has expired
-    const now = new Date();
-    const expiryDate = new Date(foundUser.expiryDate);
-    if (now > expiryDate) {
-      return { success: false, message: 'الحساب منتهي الصلاحية، تواصل مع فريق الدعم' };
-    }
-
-    setUser(foundUser);
-    localStorage.setItem('smartedu_current_user', JSON.stringify(foundUser));
-    return { success: true };
   };
 
   const register = async (fullName: string, username: string, password: string, activationCode: string): Promise<{ success: boolean; message?: string }> => {
-    console.log('Register attempt:', username, activationCode);
-    
-    // Check if user already exists
-    const users = JSON.parse(localStorage.getItem('smartedu_users_v2') || '[]');
-    if (users.find((u: User) => u.username === username)) {
-      return { success: false, message: 'اسم المستخدم موجود بالفعل' };
+    try {
+      setLoading(true);
+
+      // التحقق من وجود اسم المستخدم
+      const usersQuery = query(
+        collection(db, 'users'), 
+        where('username', '==', username)
+      );
+      const existingUser = await getDocs(usersQuery);
+      
+      if (!existingUser.empty) {
+        return { success: false, message: 'اسم المستخدم موجود بالفعل' };
+      }
+
+      // التحقق من كود التفعيل
+      const codesQuery = query(
+        collection(db, 'activationCodes'), 
+        where('code', '==', activationCode),
+        where('isUsed', '==', false),
+        where('isActive', '==', true)
+      );
+      const codeSnapshot = await getDocs(codesQuery);
+      
+      if (codeSnapshot.empty) {
+        return { success: false, message: 'كود التفعيل غير صحيح أو مستخدم بالفعل' };
+      }
+
+      const codeDoc = codeSnapshot.docs[0];
+      const codeData = codeDoc.data();
+      
+      // التحقق من انتهاء صلاحية الكود
+      if (new Date() > new Date(codeData.expiryDate)) {
+        return { success: false, message: 'كود التفعيل منتهي الصلاحية' };
+      }
+
+      // إنشاء حساب Firebase Auth
+      const email = `${username}@smartedu.app`;
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // تحديد تاريخ انتهاء الاشتراك (سنة واحدة)
+      const expiryDate = new Date();
+      expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+
+      // إنشاء بيانات المستخدم
+      const newUser: User = {
+        id: userCredential.user.uid,
+        fullName,
+        username,
+        password,
+        isAdmin: false,
+        createdAt: new Date().toISOString(),
+        expiryDate: expiryDate.toISOString(),
+        isActive: true,
+        activationCodeId: codeDoc.id
+      };
+
+      // حفظ بيانات المستخدم في Firestore
+      await setDoc(doc(db, 'users', userCredential.user.uid), newUser);
+
+      // تحديث كود التفعيل كمستخدم
+      await updateDoc(doc(db, 'activationCodes', codeDoc.id), {
+        isUsed: true,
+        usedBy: username,
+        usedAt: new Date().toISOString()
+      });
+
+      setUser(newUser);
+      return { success: true };
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      return { success: false, message: 'حدث خطأ أثناء إنشاء الحساب' };
+    } finally {
+      setLoading(false);
     }
-
-    // Check activation code
-    const codes = JSON.parse(localStorage.getItem('smartedu_codes_v2') || '[]');
-    const codeIndex = codes.findIndex((c: any) => 
-      c.code === activationCode && 
-      !c.isUsed && 
-      c.isActive && 
-      new Date() < new Date(c.expiryDate)
-    );
-    
-    if (codeIndex === -1) {
-      return { success: false, message: 'كود التفعيل غير صحيح أو منتهي الصلاحية' };
-    }
-
-    // Mark code as used
-    codes[codeIndex].isUsed = true;
-    codes[codeIndex].usedBy = username;
-    localStorage.setItem('smartedu_codes_v2', JSON.stringify(codes));
-
-    // Create new user with 1 year expiry
-    const expiryDate = new Date();
-    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-
-    const newUser: User = {
-      id: Date.now().toString(),
-      fullName,
-      username,
-      password,
-      isAdmin: false,
-      createdAt: new Date().toISOString(),
-      expiryDate: expiryDate.toISOString(),
-      isActive: true,
-      activationCodeId: codes[codeIndex].id
-    };
-
-    users.push(newUser);
-    localStorage.setItem('smartedu_users_v2', JSON.stringify(users));
-    
-    setUser(newUser);
-    localStorage.setItem('smartedu_current_user', JSON.stringify(newUser));
-    
-    return { success: true };
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('smartedu_current_user');
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const enterAsGuest = () => {
@@ -136,7 +205,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       password: '',
       isAdmin: false,
       createdAt: new Date().toISOString(),
-      expiryDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+      expiryDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       isActive: true
     };
     setUser(guestUser);
@@ -153,7 +222,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     enterAsGuest,
     isAuthenticated: !!user,
     isGuest,
-    isPremiumUser: !!isPremiumUser
+    isPremiumUser: !!isPremiumUser,
+    loading
   };
 
   return (

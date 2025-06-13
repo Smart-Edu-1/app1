@@ -7,6 +7,7 @@ interface FirebaseAppDataContextType {
   units: any[];
   lessons: any[];
   quizzes: any[];
+  codes: any[];
   loading: boolean;
   
   // Functions for subjects
@@ -29,6 +30,11 @@ interface FirebaseAppDataContextType {
   updateQuiz: (id: string, quiz: any) => Promise<void>;
   deleteQuiz: (id: string) => Promise<void>;
   
+  // Functions for codes
+  addCode: (code: any) => Promise<void>;
+  updateCode: (id: string, code: any) => Promise<void>;
+  deleteCode: (id: string) => Promise<void>;
+  
   // Helper functions
   getLessonsByUnit: (unitId: string) => any[];
   getQuizzesByUnit: (unitId: string) => any[];
@@ -45,6 +51,7 @@ export const FirebaseAppDataProvider: React.FC<FirebaseAppDataProviderProps> = (
   const [units, setUnits] = useState<any[]>([]);
   const [lessons, setLessons] = useState<any[]>([]);
   const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [codes, setCodes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const { saveData, updateData, deleteData, subscribeToData } = useFirebaseData();
@@ -72,6 +79,11 @@ export const FirebaseAppDataProvider: React.FC<FirebaseAppDataProviderProps> = (
       orderBy: { field: 'order', direction: 'asc' }
     });
     
+    // الاستماع للتغييرات في أكواد التفعيل
+    const unsubscribeCodes = subscribeToData('activationCodes', setCodes, {
+      orderBy: { field: 'createdAt', direction: 'desc' }
+    });
+    
     setLoading(false);
     
     return () => {
@@ -79,6 +91,7 @@ export const FirebaseAppDataProvider: React.FC<FirebaseAppDataProviderProps> = (
       unsubscribeUnits();
       unsubscribeLessons();
       unsubscribeQuizzes();
+      unsubscribeCodes();
     };
   }, []);
 
@@ -146,6 +159,22 @@ export const FirebaseAppDataProvider: React.FC<FirebaseAppDataProviderProps> = (
     await deleteData('quizzes', id);
   };
 
+  // Code functions
+  const addCode = async (code: any) => {
+    const id = await saveData('activationCodes', code);
+    if (id) {
+      console.log('Code added with ID:', id);
+    }
+  };
+
+  const updateCode = async (id: string, code: any) => {
+    await updateData('activationCodes', id, code);
+  };
+
+  const deleteCode = async (id: string) => {
+    await deleteData('activationCodes', id);
+  };
+
   // Helper functions
   const getLessonsByUnit = (unitId: string) => {
     return lessons.filter(lesson => lesson.unitId === unitId && lesson.isActive);
@@ -160,6 +189,7 @@ export const FirebaseAppDataProvider: React.FC<FirebaseAppDataProviderProps> = (
     units,
     lessons,
     quizzes,
+    codes,
     loading,
     addSubject,
     updateSubject,
@@ -173,6 +203,9 @@ export const FirebaseAppDataProvider: React.FC<FirebaseAppDataProviderProps> = (
     addQuiz,
     updateQuiz,
     deleteQuiz,
+    addCode,
+    updateCode,
+    deleteCode,
     getLessonsByUnit,
     getQuizzesByUnit
   };

@@ -1,23 +1,33 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Search, Edit, Trash2, Calendar } from 'lucide-react';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useToast } from '@/hooks/use-toast';
 
 const UserManagement = () => {
-  const { users, updateUser, deleteUser } = useAppData();
+  const [users, setUsers] = useState<any[]>([]);
+  const { updateData, deleteData, subscribeToData } = useFirebaseData();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [editingUser, setEditingUser] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  useEffect(() => {
+    // الاستماع للتغييرات في المستخدمين
+    const unsubscribe = subscribeToData('users', setUsers, {
+      orderBy: { field: 'createdAt', direction: 'desc' }
+    });
+    
+    return () => unsubscribe();
+  }, []);
 
   const filteredUsers = users.filter(user => 
     !user.isAdmin && (
@@ -26,27 +36,27 @@ const UserManagement = () => {
     )
   );
 
-  const handleToggleActive = (userId: string, isActive: boolean) => {
-    updateUser(userId, { isActive });
+  const handleToggleActive = async (userId: string, isActive: boolean) => {
+    await updateData('users', userId, { isActive });
     toast({
       title: "تم تحديث حالة المستخدم",
       description: `تم ${isActive ? 'تفعيل' : 'تعطيل'} الحساب بنجاح`
     });
   };
 
-  const handleExtendExpiry = (userId: string) => {
+  const handleExtendExpiry = async (userId: string) => {
     const newExpiryDate = new Date();
     newExpiryDate.setFullYear(newExpiryDate.getFullYear() + 1);
-    updateUser(userId, { expiryDate: newExpiryDate.toISOString() });
+    await updateData('users', userId, { expiryDate: newExpiryDate.toISOString() });
     toast({
       title: "تم تمديد الاشتراك",
       description: "تم تمديد اشتراك المستخدم لسنة إضافية"
     });
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     if (confirm('هل أنت متأكد من حذف هذا المستخدم؟')) {
-      deleteUser(userId);
+      await deleteData('users', userId);
       toast({
         title: "تم حذف المستخدم",
         description: "تم حذف المستخدم بنجاح"
@@ -59,9 +69,9 @@ const UserManagement = () => {
     setIsDialogOpen(true);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editingUser) {
-      updateUser(editingUser.id, {
+      await updateData('users', editingUser.id, {
         fullName: editingUser.fullName,
         username: editingUser.username,
         password: editingUser.password

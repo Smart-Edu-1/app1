@@ -10,12 +10,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2, BookOpen } from 'lucide-react';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useFirebaseAppData } from '@/contexts/FirebaseAppDataContext';
 import { useToast } from '@/hooks/use-toast';
 import ImageUpload from '@/components/ui/image-upload';
 
 const SubjectManagement = () => {
-  const { subjects, addSubject, updateSubject, deleteSubject } = useAppData();
+  const { subjects, addSubject, updateSubject, deleteSubject } = useFirebaseAppData();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<any>(null);
@@ -184,6 +184,7 @@ const SubjectManagement = () => {
                 <TableHead>الرمز</TableHead>
                 <TableHead>اللون</TableHead>
                 <TableHead>الترتيب</TableHead>
+                <TableHead>تاريخ الإنشاء</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>الإجراءات</TableHead>
               </TableRow>
@@ -213,6 +214,9 @@ const SubjectManagement = () => {
                     />
                   </TableCell>
                   <TableCell>{subject.order}</TableCell>
+                  <TableCell>
+                    {subject.createdAt ? new Date(subject.createdAt.seconds * 1000).toLocaleDateString('en-GB') : '-'}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={subject.isActive ? "default" : "secondary"}>
                       {subject.isActive ? 'نشط' : 'معطل'}

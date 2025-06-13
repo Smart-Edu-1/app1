@@ -151,8 +151,22 @@ const CodeManagement = () => {
               {codes.map((code) => (
                 <TableRow key={code.id}>
                   <TableCell className="font-mono font-bold">{code.code}</TableCell>
-                  <TableCell>{new Date(code.createdAt).toLocaleDateString('ar-SA')}</TableCell>
-                  <TableCell>{new Date(code.expiryDate).toLocaleDateString('ar-SA')}</TableCell>
+                  <TableCell>
+                    {code.createdAt ? 
+                      (code.createdAt.seconds ? 
+                        new Date(code.createdAt.seconds * 1000).toLocaleDateString('en-GB') : 
+                        new Date(code.createdAt).toLocaleDateString('en-GB')
+                      ) : '-'
+                    }
+                  </TableCell>
+                  <TableCell>
+                    {code.expiryDate ? 
+                      (code.expiryDate.seconds ? 
+                        new Date(code.expiryDate.seconds * 1000).toLocaleDateString('en-GB') : 
+                        new Date(code.expiryDate).toLocaleDateString('en-GB')
+                      ) : '-'
+                    }
+                  </TableCell>
                   <TableCell>
                     <Badge variant={code.isUsed ? "secondary" : "default"}>
                       {code.isUsed ? 'مستخدم' : 'متاح'}

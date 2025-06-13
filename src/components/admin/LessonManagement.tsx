@@ -10,12 +10,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2, Play } from 'lucide-react';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useFirebaseAppData } from '@/contexts/FirebaseAppDataContext';
 import { useToast } from '@/hooks/use-toast';
 import ImageUpload from '@/components/ui/image-upload';
 
 const LessonManagement = () => {
-  const { lessons, units, subjects, addLesson, updateLesson, deleteLesson } = useAppData();
+  const { lessons, units, subjects, addLesson, updateLesson, deleteLesson } = useFirebaseAppData();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<any>(null);
@@ -209,6 +209,7 @@ const LessonManagement = () => {
                 <TableHead>الوحدة</TableHead>
                 <TableHead>النوع</TableHead>
                 <TableHead>الترتيب</TableHead>
+                <TableHead>تاريخ الإنشاء</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>الإجراءات</TableHead>
               </TableRow>
@@ -242,6 +243,9 @@ const LessonManagement = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>{lesson.order}</TableCell>
+                    <TableCell>
+                      {lesson.createdAt ? new Date(lesson.createdAt.seconds * 1000).toLocaleDateString('en-GB') : '-'}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={lesson.isActive ? "default" : "secondary"}>
                         {lesson.isActive ? 'نشط' : 'معطل'}

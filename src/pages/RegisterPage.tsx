@@ -71,19 +71,9 @@ const RegisterPage = () => {
           title: "تم إنشاء الحساب بنجاح",
           description: `مرحباً ${formData.fullName}`
         });
-      } else {
-        toast({
-          title: "خطأ في إنشاء الحساب",
-          description: "اسم المستخدم موجود أو كود التفعيل غير صحيح أو مستخدم بالفعل",
-          variant: "destructive"
-        });
       }
     } catch (error) {
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء إنشاء الحساب",
-        variant: "destructive"
-      });
+      // الخطأ سيظهر من AuthContext
     } finally {
       setLoading(false);
     }
@@ -191,9 +181,6 @@ const RegisterPage = () => {
                 placeholder="أدخل كود التفعيل"
                 required
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                أكواد تفعيل متاحة: EDU2024, SMART123
-              </p>
             </div>
             
             <Button 

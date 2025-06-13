@@ -23,8 +23,8 @@ import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => Promise<{ success: boolean; message?: string }>;
-  register: (fullName: string, username: string, password: string, activationCode: string) => Promise<{ success: boolean; message?: string }>;
+  login: (username: string, password: string) => Promise<boolean>;
+  register: (fullName: string, username: string, password: string, activationCode: string) => Promise<boolean>;
   logout: () => void;
   enterAsGuest: () => void;
   isAuthenticated: boolean;
@@ -47,11 +47,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // جلب بيانات المستخدم من Firestore
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data() as User;
-          setUser(userData);
+        try {
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data() as User;
+            setUser(userData);
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
         }
       } else {
         setUser(null);
@@ -62,7 +65,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  const login = async (username: string, password: string): Promise<{ success: boolean; message?: string }> => {
+  const login = async (username: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
       
@@ -74,44 +77,69 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const querySnapshot = await getDocs(usersQuery);
       
       if (querySnapshot.empty) {
-        return { success: false, message: 'اسم المستخدم غير موجود' };
+        toast({
+          title: "خطأ في تسجيل الدخول",
+          description: "اسم المستخدم غير موجود",
+          variant: "destructive"
+        });
+        return false;
       }
 
       const userDoc = querySnapshot.docs[0];
       const userData = userDoc.data() as User;
       
-      // التحقق من كلمة المرور المحفوظة في Firestore
+      // التحقق من كلمة المرور
       if (userData.password !== password) {
-        return { success: false, message: 'كلمة المرور غير صحيحة' };
+        toast({
+          title: "خطأ في تسجيل الدخول",
+          description: "كلمة المرور غير صحيحة",
+          variant: "destructive"
+        });
+        return false;
       }
 
       // التحقق من حالة الحساب
       if (!userData.isActive) {
-        return { success: false, message: 'الحساب معطل، تواصل مع فريق الدعم' };
+        toast({
+          title: "حساب معطل",
+          description: "الحساب معطل، تواصل مع فريق الدعم",
+          variant: "destructive"
+        });
+        return false;
       }
 
       // التحقق من انتهاء الصلاحية
       const now = new Date();
       const expiryDate = new Date(userData.expiryDate);
       if (now > expiryDate) {
-        return { success: false, message: 'الحساب منتهي الصلاحية، تواصل مع فريق الدعم' };
+        toast({
+          title: "انتهت صلاحية الحساب",
+          description: "الحساب منتهي الصلاحية، تواصل مع فريق الدعم",
+          variant: "destructive"
+        });
+        return false;
       }
 
       // تسجيل الدخول باستخدام Firebase Auth
-      const email = `${username}@smartedu.app`; // إنشاء email وهمي
+      const email = `${username}@smartedu.app`;
       await signInWithEmailAndPassword(auth, email, password);
       
       setUser(userData);
-      return { success: true };
+      return true;
     } catch (error: any) {
       console.error('Login error:', error);
-      return { success: false, message: 'حدث خطأ أثناء تسجيل الدخول' };
+      toast({
+        title: "خطأ في تسجيل الدخول",
+        description: "حدث خطأ أثناء تسجيل الدخول",
+        variant: "destructive"
+      });
+      return false;
     } finally {
       setLoading(false);
     }
   };
 
-  const register = async (fullName: string, username: string, password: string, activationCode: string): Promise<{ success: boolean; message?: string }> => {
+  const register = async (fullName: string, username: string, password: string, activationCode: string): Promise<boolean> => {
     try {
       setLoading(true);
 
@@ -123,7 +151,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const existingUser = await getDocs(usersQuery);
       
       if (!existingUser.empty) {
-        return { success: false, message: 'اسم المستخدم موجود بالفعل' };
+        toast({
+          title: "خطأ في التسجيل",
+          description: "اسم المستخدم موجود بالفعل",
+          variant: "destructive"
+        });
+        return false;
       }
 
       // التحقق من كود التفعيل
@@ -136,7 +169,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const codeSnapshot = await getDocs(codesQuery);
       
       if (codeSnapshot.empty) {
-        return { success: false, message: 'كود التفعيل غير صحيح أو مستخدم بالفعل' };
+        toast({
+          title: "كود تفعيل خاطئ",
+          description: "كود التفعيل غير صحيح أو مستخدم بالفعل",
+          variant: "destructive"
+        });
+        return false;
       }
 
       const codeDoc = codeSnapshot.docs[0];
@@ -144,7 +182,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // التحقق من انتهاء صلاحية الكود
       if (new Date() > new Date(codeData.expiryDate)) {
-        return { success: false, message: 'كود التفعيل منتهي الصلاحية' };
+        toast({
+          title: "كود منتهي الصلاحية",
+          description: "كود التفعيل منتهي الصلاحية",
+          variant: "destructive"
+        });
+        return false;
       }
 
       // إنشاء حساب Firebase Auth
@@ -179,10 +222,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       setUser(newUser);
-      return { success: true };
+      return true;
     } catch (error: any) {
       console.error('Registration error:', error);
-      return { success: false, message: 'حدث خطأ أثناء إنشاء الحساب' };
+      toast({
+        title: "خطأ في التسجيل",
+        description: "حدث خطأ أثناء إنشاء الحساب",
+        variant: "destructive"
+      });
+      return false;
     } finally {
       setLoading(false);
     }

@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, Users, FileText, Star, Bell, Settings, LogOut, BarChart3, Layers, Play, HelpCircle } from 'lucide-react';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useFirebaseAppData } from '@/contexts/FirebaseAppDataContext';
 import { useToast } from '@/hooks/use-toast';
 import UserManagement from '@/components/admin/UserManagement';
 import CodeManagement from '@/components/admin/CodeManagement';
@@ -17,19 +17,11 @@ import NotificationManagement from '@/components/admin/NotificationManagement';
 import SettingsManagement from '@/components/admin/SettingsManagement';
 
 const AdminDashboard = () => {
-  const { subjects, codes, users, notifications, units, lessons, quizzes } = useAppData();
+  const { subjects, codes, units, lessons, quizzes } = useFirebaseAppData();
   
-  const usersCount = users.filter(user => !user.isAdmin).length;
   const activeCodes = codes.filter(code => !code.isUsed && code.isActive).length;
-  const unreadNotifications = notifications.filter(n => !n.isRead).length;
   
   const statsCards = [
-    {
-      title: 'المستخدمين',
-      value: usersCount,
-      icon: <Users className="h-6 w-6 text-blue-500" />,
-      description: 'إجمالي المستخدمين المسجلين'
-    },
     {
       title: 'المواد الدراسية',
       value: subjects.length,
@@ -61,10 +53,10 @@ const AdminDashboard = () => {
       description: 'أكواد غير مستخدمة'
     },
     {
-      title: 'الإشعارات غير المقروءة',
-      value: unreadNotifications,
-      icon: <Bell className="h-6 w-6 text-red-500" />,
-      description: 'إشعارات تحتاج متابعة'
+      title: 'إجمالي الأكواد',
+      value: codes.length,
+      icon: <FileText className="h-6 w-6 text-blue-500" />,
+      description: 'جميع أكواد التفعيل'
     }
   ];
 
@@ -77,7 +69,7 @@ const AdminDashboard = () => {
         </p>
       </header>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statsCards.map((card, index) => (
           <Card key={index}>
             <CardHeader className="pb-2">
@@ -145,11 +137,10 @@ const AdminPanel: React.FC = () => {
   const { toast } = useToast();
 
   React.useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('smartedu_current_user') || '{}');
-    if (!userData || !userData.isAdmin) {
+    if (!user || !user.isAdmin) {
       navigate('/');
     }
-  }, [navigate]);
+  }, [user, navigate]);
 
   const handleLogout = () => {
     logout();
@@ -159,6 +150,10 @@ const AdminPanel: React.FC = () => {
       description: "شكراً لاستخدامك لوحة تحكم Smart Edu"
     });
   };
+
+  if (!user || !user.isAdmin) {
+    return <div>جاري التحميل...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">

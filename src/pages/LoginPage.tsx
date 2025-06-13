@@ -36,30 +36,19 @@ const LoginPage = () => {
 
     try {
       const success = await login(username, password);
-      if (success) {
-        const userData = JSON.parse(localStorage.getItem('smartedu_user') || '{}');
-        if (userData.isAdmin) {
+      if (success && user) {
+        if (user.isAdmin) {
           navigate('/admin');
         } else {
           navigate('/app');
         }
         toast({
           title: "تم تسجيل الدخول بنجاح",
-          description: `مرحباً ${userData.fullName}`
-        });
-      } else {
-        toast({
-          title: "خطأ في تسجيل الدخول",
-          description: "اسم المستخدم أو كلمة المرور غير صحيحة",
-          variant: "destructive"
+          description: `مرحباً ${user.fullName}`
         });
       }
     } catch (error) {
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء تسجيل الدخول",
-        variant: "destructive"
-      });
+      // الخطأ سيظهر من AuthContext
     } finally {
       setLoading(false);
     }
@@ -88,9 +77,6 @@ const LoginPage = () => {
             </div>
             <CardTitle className="text-2xl font-bold">Smart Edu</CardTitle>
             <CardDescription>تسجيل الدخول إلى حسابك</CardDescription>
-            <p className="text-xs text-muted-foreground mt-2">
-              للدخول كمدير: اسم المستخدم "Yousef55" وكلمة المرور "yousef18"
-            </p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">

@@ -31,8 +31,8 @@ const UserManagement = () => {
 
   const filteredUsers = users.filter(user => 
     !user.isAdmin && (
-      user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.username.toLowerCase().includes(searchTerm.toLowerCase())
+      user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.username?.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
@@ -123,8 +123,22 @@ const UserManagement = () => {
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.fullName}</TableCell>
                   <TableCell>{user.username}</TableCell>
-                  <TableCell>{new Date(user.createdAt).toLocaleDateString('ar-SA')}</TableCell>
-                  <TableCell>{new Date(user.expiryDate).toLocaleDateString('ar-SA')}</TableCell>
+                  <TableCell>
+                    {user.createdAt ? 
+                      (user.createdAt.seconds ? 
+                        new Date(user.createdAt.seconds * 1000).toLocaleDateString('en-GB') : 
+                        new Date(user.createdAt).toLocaleDateString('en-GB')
+                      ) : '-'
+                    }
+                  </TableCell>
+                  <TableCell>
+                    {user.expiryDate ? 
+                      (user.expiryDate.seconds ? 
+                        new Date(user.expiryDate.seconds * 1000).toLocaleDateString('en-GB') : 
+                        new Date(user.expiryDate).toLocaleDateString('en-GB')
+                      ) : '-'
+                    }
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       <Switch

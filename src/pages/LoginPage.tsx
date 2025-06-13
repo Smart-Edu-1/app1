@@ -22,9 +22,12 @@ const LoginPage = () => {
 
   React.useEffect(() => {
     if (user) {
+      console.log('المستخدم الحالي:', user);
       if (user.isAdmin) {
+        console.log('توجيه إلى لوحة الإدارة');
         navigate('/admin');
       } else {
+        console.log('توجيه إلى التطبيق');
         navigate('/app');
       }
     }
@@ -35,20 +38,18 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
+      console.log('محاولة تسجيل الدخول:', { username, password });
       const success = await login(username, password);
-      if (success && user) {
-        if (user.isAdmin) {
-          navigate('/admin');
-        } else {
-          navigate('/app');
-        }
+      
+      if (success) {
         toast({
           title: "تم تسجيل الدخول بنجاح",
-          description: `مرحباً ${user.fullName}`
+          description: `مرحباً ${username}`
         });
+        // التوجيه سيتم من useEffect عند تغيير user
       }
     } catch (error) {
-      // الخطأ سيظهر من AuthContext
+      console.error('خطأ في تسجيل الدخول:', error);
     } finally {
       setLoading(false);
     }

@@ -1,25 +1,18 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { 
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  User as FirebaseUser
-} from 'firebase/auth';
-import { 
-  doc, 
-  setDoc, 
-  getDoc, 
-  collection, 
-  query, 
-  where, 
-  getDocs,
-  updateDoc
-} from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
-import { User } from '@/types';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { collection, query, where, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+
+interface User {
+  id: string;
+  username: string;
+  fullName: string;
+  isAdmin: boolean;
+  isActive: boolean;
+  expiryDate?: string;
+  createdAt: string;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -27,151 +20,150 @@ interface AuthContextType {
   register: (fullName: string, username: string, password: string, activationCode: string) => Promise<boolean>;
   logout: () => void;
   enterAsGuest: () => void;
-  isAuthenticated: boolean;
-  isGuest: boolean;
-  isPremiumUser: boolean;
-  loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  login: async () => false,
+  register: async () => false,
+  logout: () => {},
+  enterAsGuest: () => {}
+});
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
+export const useAuth = () => useContext(AuthContext);
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data() as User;
-            setUser(userData);
-          }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-        }
-      } else {
-        setUser(null);
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('خطأ في تحليل بيانات المستخدم المحفوظة:', error);
+        localStorage.removeItem('user');
       }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    }
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      setLoading(true);
+      console.log('محاولة تسجيل الدخول للمستخدم:', username);
       
-      // البحث عن المستخدم باستخدام اسم المستخدم
-      const usersQuery = query(
-        collection(db, 'users'), 
-        where('username', '==', username)
+      const usersRef = collection(db, 'users');
+      const q = query(
+        usersRef, 
+        where('username', '==', username),
+        where('password', '==', password)
       );
-      const querySnapshot = await getDocs(usersQuery);
+      
+      const querySnapshot = await getDocs(q);
       
       if (querySnapshot.empty) {
+        console.log('لم يتم العثور على المستخدم');
         toast({
           title: "خطأ في تسجيل الدخول",
-          description: "اسم المستخدم غير موجود",
+          description: "اسم المستخدم أو كلمة المرور غير صحيحة",
           variant: "destructive"
         });
         return false;
       }
 
       const userDoc = querySnapshot.docs[0];
-      const userData = userDoc.data() as User;
+      const userData = userDoc.data();
       
-      // التحقق من كلمة المرور
-      if (userData.password !== password) {
-        toast({
-          title: "خطأ في تسجيل الدخول",
-          description: "كلمة المرور غير صحيحة",
-          variant: "destructive"
-        });
-        return false;
-      }
+      console.log('بيانات المستخدم الموجودة:', userData);
 
-      // التحقق من حالة الحساب
-      if (!userData.isActive) {
+      // التحقق من أن الحساب نشط (ما عدا الأدمن)
+      if (userData.isActive === false && username !== 'admin') {
         toast({
           title: "حساب معطل",
-          description: "الحساب معطل، تواصل مع فريق الدعم",
+          description: "تم تعطيل حسابك. يرجى الاتصال بالإدارة",
           variant: "destructive"
         });
         return false;
       }
 
-      // التحقق من انتهاء الصلاحية
-      const now = new Date();
-      const expiryDate = new Date(userData.expiryDate);
-      if (now > expiryDate) {
-        toast({
-          title: "انتهت صلاحية الحساب",
-          description: "الحساب منتهي الصلاحية، تواصل مع فريق الدعم",
-          variant: "destructive"
-        });
-        return false;
+      // التحقق من انتهاء صلاحية الحساب (ما عدا الأدمن)
+      if (userData.expiryDate && username !== 'admin') {
+        const expiryDate = new Date(userData.expiryDate);
+        const now = new Date();
+        if (expiryDate < now) {
+          toast({
+            title: "انتهت صلاحية الحساب",
+            description: "انتهت صلاحية حسابك. يرجى تجديد الاشتراك",
+            variant: "destructive"
+          });
+          return false;
+        }
       }
 
-      // تسجيل الدخول باستخدام Firebase Auth
-      const email = `${username}@smartedu.app`;
-      await signInWithEmailAndPassword(auth, email, password);
+      // تحديد إذا كان المستخدم مسؤول
+      const isAdmin = username === 'admin' || userData.isAdmin === true;
       
-      setUser(userData);
+      const loggedInUser: User = {
+        id: userDoc.id,
+        username: userData.username,
+        fullName: userData.fullName,
+        isAdmin: isAdmin,
+        isActive: userData.isActive !== false,
+        expiryDate: userData.expiryDate,
+        createdAt: userData.createdAt
+      };
+
+      console.log('المستخدم بعد تسجيل الدخول:', loggedInUser);
+      
+      setUser(loggedInUser);
+      localStorage.setItem('user', JSON.stringify(loggedInUser));
+      
       return true;
-    } catch (error: any) {
-      console.error('Login error:', error);
+    } catch (error) {
+      console.error('خطأ في تسجيل الدخول:', error);
       toast({
         title: "خطأ في تسجيل الدخول",
-        description: "حدث خطأ أثناء تسجيل الدخول",
+        description: "حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى",
         variant: "destructive"
       });
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
   const register = async (fullName: string, username: string, password: string, activationCode: string): Promise<boolean> => {
     try {
-      setLoading(true);
-
-      // التحقق من وجود اسم المستخدم
-      const usersQuery = query(
-        collection(db, 'users'), 
-        where('username', '==', username)
-      );
-      const existingUser = await getDocs(usersQuery);
+      console.log('محاولة التحقق من كود التفعيل:', activationCode);
       
-      if (!existingUser.empty) {
+      // التحقق من وجود كود التفعيل
+      const codesRef = collection(db, 'activationCodes');
+      const codeQuery = query(
+        codesRef,
+        where('code', '==', activationCode),
+        where('isUsed', '==', false),
+        where('isActive', '==', true)
+      );
+      
+      const codeSnapshot = await getDocs(codeQuery);
+      
+      if (codeSnapshot.empty) {
         toast({
-          title: "خطأ في التسجيل",
-          description: "اسم المستخدم موجود بالفعل",
+          title: "كود تفعيل غير صحيح",
+          description: "كود التفعيل غير موجود أو مستخدم بالفعل",
           variant: "destructive"
         });
         return false;
       }
 
-      // التحقق من كود التفعيل
-      const codesQuery = query(
-        collection(db, 'activationCodes'), 
-        where('code', '==', activationCode),
-        where('isUsed', '==', false),
-        where('isActive', '==', true)
-      );
-      const codeSnapshot = await getDocs(codesQuery);
+      // التحقق من عدم وجود اسم المستخدم مسبقاً
+      const usersRef = collection(db, 'users');
+      const userQuery = query(usersRef, where('username', '==', username));
+      const userSnapshot = await getDocs(userQuery);
       
-      if (codeSnapshot.empty) {
+      if (!userSnapshot.empty) {
         toast({
-          title: "كود تفعيل خاطئ",
-          description: "كود التفعيل غير صحيح أو مستخدم بالفعل",
+          title: "اسم المستخدم موجود",
+          description: "اسم المستخدم موجود بالفعل. يرجى اختيار اسم آخر",
           variant: "destructive"
         });
         return false;
@@ -180,111 +172,83 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const codeDoc = codeSnapshot.docs[0];
       const codeData = codeDoc.data();
       
-      // التحقق من انتهاء صلاحية الكود
-      if (new Date() > new Date(codeData.expiryDate)) {
-        toast({
-          title: "كود منتهي الصلاحية",
-          description: "كود التفعيل منتهي الصلاحية",
-          variant: "destructive"
-        });
-        return false;
-      }
-
-      // إنشاء حساب Firebase Auth
-      const email = `${username}@smartedu.app`;
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // تحديد تاريخ انتهاء الاشتراك (سنة واحدة)
+      // إنشاء تاريخ انتهاء الصلاحية
       const expiryDate = new Date();
-      expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-
-      // إنشاء بيانات المستخدم
-      const newUser: User = {
-        id: userCredential.user.uid,
-        fullName,
+      expiryDate.setFullYear(expiryDate.getFullYear() + (codeData.validityYears || 1));
+      
+      // إنشاء المستخدم الجديد
+      const newUser = {
         username,
         password,
-        isAdmin: false,
-        createdAt: new Date().toISOString(),
-        expiryDate: expiryDate.toISOString(),
+        fullName,
         isActive: true,
-        activationCodeId: codeDoc.id
+        isAdmin: false,
+        expiryDate: expiryDate.toISOString(),
+        createdAt: new Date().toISOString(),
+        activationCode
       };
-
-      // حفظ بيانات المستخدم في Firestore
-      await setDoc(doc(db, 'users', userCredential.user.uid), newUser);
-
+      
+      const docRef = await addDoc(usersRef, newUser);
+      
       // تحديث كود التفعيل كمستخدم
       await updateDoc(doc(db, 'activationCodes', codeDoc.id), {
         isUsed: true,
         usedBy: username,
         usedAt: new Date().toISOString()
       });
-
-      setUser(newUser);
+      
+      const registeredUser: User = {
+        id: docRef.id,
+        username,
+        fullName,
+        isAdmin: false,
+        isActive: true,
+        expiryDate: expiryDate.toISOString(),
+        createdAt: new Date().toISOString()
+      };
+      
+      setUser(registeredUser);
+      localStorage.setItem('user', JSON.stringify(registeredUser));
+      
       return true;
-    } catch (error: any) {
-      console.error('Registration error:', error);
+    } catch (error) {
+      console.error('خطأ في إنشاء الحساب:', error);
       toast({
-        title: "خطأ في التسجيل",
-        description: "حدث خطأ أثناء إنشاء الحساب",
+        title: "خطأ في إنشاء الحساب",
+        description: "حدث خطأ أثناء إنشاء الحساب. يرجى المحاولة مرة أخرى",
         variant: "destructive"
       });
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
-  const logout = async () => {
-    try {
-      await signOut(auth);
-      setUser(null);
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('user');
   };
 
   const enterAsGuest = () => {
     const guestUser: User = {
       id: 'guest',
-      fullName: 'ضيف',
       username: 'guest',
-      password: '',
+      fullName: 'ضيف',
       isAdmin: false,
-      createdAt: new Date().toISOString(),
-      expiryDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      isActive: true
+      isActive: true,
+      createdAt: new Date().toISOString()
     };
     setUser(guestUser);
-  };
-
-  const isGuest = user?.id === 'guest';
-  const isPremiumUser = user && !isGuest && user.isActive && new Date() < new Date(user.expiryDate);
-
-  const value: AuthContextType = {
-    user,
-    login,
-    register,
-    logout,
-    enterAsGuest,
-    isAuthenticated: !!user,
-    isGuest,
-    isPremiumUser: !!isPremiumUser,
-    loading
+    localStorage.setItem('user', JSON.stringify(guestUser));
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{
+      user,
+      login,
+      register,
+      logout,
+      enterAsGuest
+    }}>
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

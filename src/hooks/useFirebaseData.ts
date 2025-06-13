@@ -10,7 +10,10 @@ import {
   onSnapshot,
   query,
   where,
-  orderBy
+  orderBy,
+  Query,
+  CollectionReference,
+  DocumentData
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -105,18 +108,26 @@ export const useFirebaseData = () => {
   const getData = async (collectionName: string, conditions?: any) => {
     setLoading(true);
     try {
-      let q = collection(db, collectionName);
+      const collectionRef = collection(db, collectionName);
+      let queryRef: Query<DocumentData> | CollectionReference<DocumentData> = collectionRef;
       
       if (conditions) {
         if (conditions.where) {
-          q = query(q, where(conditions.where.field, conditions.where.operator, conditions.where.value));
+          queryRef = query(collectionRef, where(conditions.where.field, conditions.where.operator, conditions.where.value));
         }
         if (conditions.orderBy) {
-          q = query(q, orderBy(conditions.orderBy.field, conditions.orderBy.direction || 'asc'));
+          if (conditions.where) {
+            queryRef = query(collectionRef, 
+              where(conditions.where.field, conditions.where.operator, conditions.where.value),
+              orderBy(conditions.orderBy.field, conditions.orderBy.direction || 'asc')
+            );
+          } else {
+            queryRef = query(collectionRef, orderBy(conditions.orderBy.field, conditions.orderBy.direction || 'asc'));
+          }
         }
       }
       
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await getDocs(queryRef);
       const data = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -138,18 +149,26 @@ export const useFirebaseData = () => {
 
   // الاستماع للتغييرات في الوقت الفعلي
   const subscribeToData = (collectionName: string, callback: (data: any[]) => void, conditions?: any) => {
-    let q = collection(db, collectionName);
+    const collectionRef = collection(db, collectionName);
+    let queryRef: Query<DocumentData> | CollectionReference<DocumentData> = collectionRef;
     
     if (conditions) {
       if (conditions.where) {
-        q = query(q, where(conditions.where.field, conditions.where.operator, conditions.where.value));
+        queryRef = query(collectionRef, where(conditions.where.field, conditions.where.operator, conditions.where.value));
       }
       if (conditions.orderBy) {
-        q = query(q, orderBy(conditions.orderBy.field, conditions.orderBy.direction || 'asc'));
+        if (conditions.where) {
+          queryRef = query(collectionRef, 
+            where(conditions.where.field, conditions.where.operator, conditions.where.value),
+            orderBy(conditions.orderBy.field, conditions.orderBy.direction || 'asc')
+          );
+        } else {
+          queryRef = query(collectionRef, orderBy(conditions.orderBy.field, conditions.orderBy.direction || 'asc'));
+        }
       }
     }
     
-    return onSnapshot(q, (querySnapshot) => {
+    return onSnapshot(queryRef, (querySnapshot) => {
       const data = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()

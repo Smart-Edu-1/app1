@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, query, where, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -59,21 +60,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       console.log('محاولة تسجيل الدخول للمستخدم:', username);
+      console.log('كلمة المرور:', password);
       
       const usersRef = collection(db, 'users');
-      const q = query(
-        usersRef, 
-        where('username', '==', username),
-        where('password', '==', password)
-      );
+      const q = query(usersRef, where('username', '==', username));
       
       const querySnapshot = await getDocs(q);
+      console.log('عدد المستندات الموجودة:', querySnapshot.size);
       
       if (querySnapshot.empty) {
         console.log('لم يتم العثور على المستخدم');
         toast({
           title: "خطأ في تسجيل الدخول",
-          description: "اسم المستخدم أو كلمة المرور غير صحيحة",
+          description: "اسم المستخدم غير موجود",
           variant: "destructive"
         });
         return false;
@@ -84,8 +83,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('بيانات المستخدم الموجودة:', userData);
 
+      // التحقق من كلمة المرور
+      if (userData.password !== password) {
+        console.log('كلمة المرور غير صحيحة');
+        toast({
+          title: "خطأ في تسجيل الدخول",
+          description: "كلمة المرور غير صحيحة",
+          variant: "destructive"
+        });
+        return false;
+      }
+
       // التحقق من أن الحساب نشط (ما عدا الأدمن)
-      if (userData.isActive === false && username !== 'admin') {
+      if (userData.isActive === false && !userData.isAdmin) {
         toast({
           title: "حساب معطل",
           description: "تم تعطيل حسابك. يرجى الاتصال بالإدارة",
@@ -95,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // التحقق من انتهاء صلاحية الحساب (ما عدا الأدمن)
-      if (userData.expiryDate && username !== 'admin') {
+      if (userData.expiryDate && !userData.isAdmin) {
         const expiryDate = new Date(userData.expiryDate);
         const now = new Date();
         if (expiryDate < now) {
@@ -109,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // تحديد إذا كان المستخدم مسؤول
-      const isAdmin = username === 'admin' || userData.isAdmin === true;
+      const isAdmin = userData.isAdmin === true;
       
       const loggedInUser: User = {
         id: userDoc.id,
@@ -122,9 +132,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       console.log('المستخدم بعد تسجيل الدخول:', loggedInUser);
+      console.log('هل هو مشرف؟', isAdmin);
       
       setUser(loggedInUser);
       localStorage.setItem('user', JSON.stringify(loggedInUser));
+      
+      toast({
+        title: "تم تسجيل الدخول بنجاح",
+        description: `مرحباً ${userData.fullName}`,
+      });
       
       return true;
     } catch (error) {

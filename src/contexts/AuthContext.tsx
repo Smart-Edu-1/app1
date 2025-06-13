@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, query, where, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -59,13 +58,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      console.log('محاولة تسجيل الدخول للمستخدم:', username);
-      console.log('كلمة المرور:', password);
+      console.log('بدء محاولة تسجيل الدخول...');
+      console.log('Firebase Project ID:', db.app.options.projectId);
+      console.log('اسم المستخدم:', username);
+      
+      // Test Firebase connection first
+      console.log('اختبار الاتصال بقاعدة البيانات...');
       
       const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('username', '==', username));
+      console.log('تم إنشاء مرجع المجموعة');
       
+      const q = query(usersRef, where('username', '==', username));
+      console.log('تم إنشاء الاستعلام');
+      
+      console.log('محاولة تنفيذ الاستعلام...');
       const querySnapshot = await getDocs(q);
+      console.log('تم تنفيذ الاستعلام بنجاح');
       console.log('عدد المستندات الموجودة:', querySnapshot.size);
       
       if (querySnapshot.empty) {
@@ -143,11 +151,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       return true;
-    } catch (error) {
-      console.error('خطأ في تسجيل الدخول:', error);
+    } catch (error: any) {
+      console.error('خطأ مفصل في تسجيل الدخول:', error);
+      console.error('نوع الخطأ:', error.code);
+      console.error('رسالة الخطأ:', error.message);
+      
+      let errorMessage = "حدث خطأ أثناء تسجيل الدخول";
+      
+      if (error.code === 'permission-denied') {
+        errorMessage = "لا توجد صلاحيات كافية للوصول إلى قاعدة البيانات. يرجى التحقق من إعدادات Firestore";
+        console.error('خطأ في الصلاحيات: تحقق من قواعد Firestore Security Rules');
+      } else if (error.code === 'unavailable') {
+        errorMessage = "قاعدة البيانات غير متاحة حالياً";
+      }
+      
       toast({
         title: "خطأ في تسجيل الدخول",
-        description: "حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى",
+        description: errorMessage,
         variant: "destructive"
       });
       return false;

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, query, where, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -20,6 +19,8 @@ interface AuthContextType {
   register: (fullName: string, username: string, password: string, activationCode: string) => Promise<boolean>;
   logout: () => void;
   enterAsGuest: () => void;
+  isGuest: boolean;
+  isPremiumUser: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -27,7 +28,9 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => false,
   register: async () => false,
   logout: () => {},
-  enterAsGuest: () => {}
+  enterAsGuest: () => {},
+  isGuest: false,
+  isPremiumUser: false
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -48,6 +51,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
   }, []);
+
+  // Calculate isGuest and isPremiumUser based on user state
+  const isGuest = user?.id === 'guest';
+  const isPremiumUser = user ? !isGuest && user.isActive && (!user.expiryDate || new Date(user.expiryDate) > new Date()) : false;
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
@@ -246,7 +253,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       register,
       logout,
-      enterAsGuest
+      enterAsGuest,
+      isGuest,
+      isPremiumUser
     }}>
       {children}
     </AuthContext.Provider>

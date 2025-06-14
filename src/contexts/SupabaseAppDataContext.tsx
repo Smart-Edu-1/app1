@@ -851,17 +851,23 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     try {
       console.log('🔄 تحديث إعدادات التطبيق:', settings);
       
-      // Get the first (and should be only) app_settings record
-      const { data: existingSettings } = await supabase
+      // First try to get existing settings to get the correct ID
+      const { data: existingSettings, error: fetchError } = await supabase
         .from('app_settings')
         .select('id')
-        .limit(1)
-        .single();
+        .limit(1);
 
-      if (!existingSettings) {
+      console.log('📋 السجلات الموجودة:', existingSettings, 'خطأ:', fetchError);
+
+      if (fetchError) {
+        console.error('❌ خطأ في جلب الإعدادات:', fetchError);
+        throw fetchError;
+      }
+
+      if (!existingSettings || existingSettings.length === 0) {
         console.log('📝 إنشاء إعدادات جديدة...');
         // If no settings exist, create new ones
-        const { error: insertError } = await supabase
+        const { data: newData, error: insertError } = await supabase
           .from('app_settings')
           .insert({
             app_name: settings.appName,
@@ -876,13 +882,19 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
             subscription_plans: settings.subscriptionPlans || [],
             admin_username: settings.adminCredentials?.username || 'admin',
             admin_password: settings.adminCredentials?.password || 'admin123'
-          });
+          })
+          .select()
+          .single();
         
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('❌ خطأ في إنشاء الإعدادات:', insertError);
+          throw insertError;
+        }
+        console.log('✅ تم إنشاء الإعدادات:', newData);
       } else {
-        console.log('🔄 تحديث الإعدادات الموجودة...', existingSettings.id);
-        // Update existing settings
-        const { error: updateError } = await supabase
+        console.log('🔄 تحديث الإعدادات الموجودة...', existingSettings[0].id);
+        // Update existing settings using the first record's ID
+        const { data: updatedData, error: updateError } = await supabase
           .from('app_settings')
           .update({
             app_name: settings.appName,
@@ -898,12 +910,21 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
             admin_username: settings.adminCredentials?.username || 'admin',
             admin_password: settings.adminCredentials?.password || 'admin123'
           })
-          .eq('id', existingSettings.id);
+          .eq('id', existingSettings[0].id)
+          .select();
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('❌ خطأ في تحديث الإعدادات:', updateError);
+          throw updateError;
+        }
+        console.log('✅ تم تحديث الإعدادات:', updatedData);
       }
       
       console.log('✅ تم تحديث الإعدادات بنجاح');
+      
+      // Force reload data to refresh the context
+      await loadData();
+      
     } catch (error) {
       console.error('❌ خطأ في تحديث إعدادات التطبيق:', error);
       toast({
@@ -911,6 +932,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
         description: "حدث خطأ أثناء تحديث إعدادات التطبيق",
         variant: "destructive"
       });
+      throw error;
     }
   };
 

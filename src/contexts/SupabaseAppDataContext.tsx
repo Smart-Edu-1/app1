@@ -110,6 +110,19 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     setLoading(true);
     try {
       console.log('🔄 بدء تحميل البيانات من Supabase...');
+      console.log('🔗 Supabase URL:', supabase.supabaseUrl);
+      console.log('🔑 Supabase Key (أول 20 حرف):', supabase.supabaseKey?.substring(0, 20));
+      
+      // اختبار الاتصال أولاً
+      console.log('🧪 اختبار الاتصال مع Supabase...');
+      const testResponse = await fetch(`${supabase.supabaseUrl}/rest/v1/subjects?select=count`, {
+        headers: {
+          'apikey': supabase.supabaseKey || '',
+          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log('🧪 نتيجة اختبار الاتصال:', testResponse.status, testResponse.statusText);
       
       // Load subjects
       const { data: subjectsData, error: subjectsError } = await supabase

@@ -31,7 +31,7 @@ const QuizManagement = () => {
   const [questionFormData, setQuestionFormData] = useState({
     text: '',
     type: 'multiple_choice' as 'multiple_choice' | 'true_false',
-    options: ['', '', '', ''],
+    options: ['', ''], // Start with 2 options by default
     correct_answer: '',
     explanation: ''
   });
@@ -125,7 +125,7 @@ const QuizManagement = () => {
       setQuestionFormData({
         text: '',
         type: 'multiple_choice',
-        options: ['', '', '', ''],
+        options: ['', ''], // Reset to 2 options
         correct_answer: '',
         explanation: ''
       });
@@ -239,20 +239,50 @@ const QuizManagement = () => {
                 {questionFormData.type === 'multiple_choice' ? (
                   <>
                     {questionFormData.options.map((option, index) => (
-                      <div key={index}>
-                        <Label htmlFor={`option${index}`}>الخيار {index + 1}</Label>
-                        <Input
-                          id={`option${index}`}
-                          value={option}
-                          onChange={(e) => {
-                            const newOptions = [...questionFormData.options];
-                            newOptions[index] = e.target.value;
-                            setQuestionFormData({ ...questionFormData, options: newOptions });
-                          }}
-                          placeholder={`الخيار ${index + 1}`}
-                        />
+                      <div key={index} className="flex items-center space-x-2">
+                        <div className="flex-1">
+                          <Label htmlFor={`option${index}`}>الخيار {index + 1}</Label>
+                          <Input
+                            id={`option${index}`}
+                            value={option}
+                            onChange={(e) => {
+                              const newOptions = [...questionFormData.options];
+                              newOptions[index] = e.target.value;
+                              setQuestionFormData({ ...questionFormData, options: newOptions });
+                            }}
+                            placeholder={`الخيار ${index + 1}`}
+                          />
+                        </div>
+                        {questionFormData.options.length > 2 && (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              const newOptions = questionFormData.options.filter((_, i) => i !== index);
+                              setQuestionFormData({ ...questionFormData, options: newOptions });
+                            }}
+                            className="mt-6"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setQuestionFormData({
+                          ...questionFormData,
+                          options: [...questionFormData.options, '']
+                        });
+                      }}
+                      className="w-full"
+                    >
+                      <Plus className="ml-2 h-4 w-4" />
+                      إضافة خيار
+                    </Button>
                     <div>
                       <Label htmlFor="correctAnswer">الإجابة الصحيحة</Label>
                       <select
@@ -283,6 +313,17 @@ const QuizManagement = () => {
                     </select>
                   </div>
                 )}
+                
+                <div>
+                  <Label htmlFor="explanation">تفسير السؤال</Label>
+                  <Textarea
+                    id="explanation"
+                    value={questionFormData.explanation}
+                    onChange={(e) => setQuestionFormData({ ...questionFormData, explanation: e.target.value })}
+                    placeholder="اكتب تفسير السؤال والإجابة الصحيحة"
+                    rows={3}
+                  />
+                </div>
                 
                 <Button onClick={handleQuestionSubmit} className="w-full" disabled={!selectedQuizId}>
                   إضافة السؤال

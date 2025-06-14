@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Check, X, BookOpen, Trophy } from 'lucide-react';
 import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 
 const QuizPage: React.FC = () => {
@@ -11,10 +10,9 @@ const QuizPage: React.FC = () => {
   const navigate = useNavigate();
   const { quizzes, units, subjects } = useSupabaseAppData();
   
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<{ [key: string]: string | number }>({});
+  const [answers, setAnswers] = useState<{ [key: string]: string }>({});
+  const [checkedQuestions, setCheckedQuestions] = useState<{ [key: string]: boolean }>({});
   const [showResults, setShowResults] = useState(false);
-  const [score, setScore] = useState(0);
 
   const quiz = quizzes.find(q => q.id === id);
   const unit = quiz && quiz.subject_id ? units.find(u => u.subject_id === quiz.subject_id) : null;
@@ -44,47 +42,57 @@ const QuizPage: React.FC = () => {
           العودة لصفحة المادة
         </Button>
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">{quiz.name}</h1>
-          <p className="text-gray-600">لا توجد أسئلة في هذا الاختبار حالياً</p>
+          <h1 className="text-2xl font-bold mb-4">{quiz.title}</h1>
+          <p className="text-muted-foreground">لا توجد أسئلة في هذا الاختبار حالياً</p>
         </div>
       </div>
     );
   }
 
-  const handleAnswerSelect = (questionId: string, answer: string | number) => {
+  const handleAnswerSelect = (questionId: string, answer: string) => {
     setAnswers(prev => ({ ...prev, [questionId]: answer }));
   };
 
-  const handleNext = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(prev => prev + 1);
-    } else {
-      // Calculate score
-      let correctAnswers = 0;
-      questions.forEach(question => {
-        if (answers[question.id] === question.correctAnswer) {
-          correctAnswers++;
-        }
-      });
-      setScore(correctAnswers);
-      setShowResults(true);
-    }
+  const handleCheckQuestion = (questionId: string) => {
+    setCheckedQuestions(prev => ({ ...prev, [questionId]: true }));
   };
 
-  const handlePrevious = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(prev => prev - 1);
-    }
+  const handleCheckAllQuiz = () => {
+    const checkedAll: { [key: string]: boolean } = {};
+    questions.forEach(q => {
+      checkedAll[q.id] = true;
+    });
+    setCheckedQuestions(checkedAll);
+    setShowResults(true);
   };
 
-  const restartQuiz = () => {
-    setCurrentQuestion(0);
-    setAnswers({});
-    setShowResults(false);
-    setScore(0);
+  const isQuestionCorrect = (question: any) => {
+    const userAnswer = answers[question.id];
+    if (question.type === 'true_false') {
+      return userAnswer === question.correct_answer;
+    }
+    return userAnswer === question.correct_answer;
+  };
+
+  const handleExplanation = (question: any) => {
+    navigate(`/app/quiz/${quiz.id}/explanation/${question.id}`, {
+      state: {
+        explanation: question.explanation,
+        questionText: question.text
+      }
+    });
+  };
+
+  const getScore = () => {
+    let correct = 0;
+    questions.forEach(question => {
+      if (isQuestionCorrect(question)) correct++;
+    });
+    return correct;
   };
 
   if (showResults) {
+    const score = getScore();
     const percentage = (score / questions.length) * 100;
     
     return (
@@ -100,8 +108,11 @@ const QuizPage: React.FC = () => {
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">نتائج الاختبار</CardTitle>
-            <p className="text-gray-600">{quiz.name}</p>
+            <div className="flex items-center justify-center mb-4">
+              <Trophy className="h-8 w-8 text-primary ml-3" />
+              <CardTitle className="text-2xl">نتائج الاختبار</CardTitle>
+            </div>
+            <p className="text-muted-foreground">{quiz.title}</p>
           </CardHeader>
           <CardContent className="text-center">
             <div className="mb-6">
@@ -111,48 +122,19 @@ const QuizPage: React.FC = () => {
               <p className="text-lg">
                 {score} من {questions.length} إجابة صحيحة
               </p>
+              <p className="text-muted-foreground">
+                {percentage >= 70 ? 'مبروك! لقد نجحت في الاختبار' : 'يجب المزيد من المراجعة'}
+              </p>
             </div>
             
-            <div className="space-y-4 mb-6">
-              {questions.map((question, index) => {
-                const userAnswer = answers[question.id];
-                const isCorrect = userAnswer === question.correctAnswer;
-                
-                return (
-                  <div key={question.id} className="p-4 border rounded-lg">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium mb-2">السؤال {index + 1}: {question.text}</h4>
-                        {question.imageUrl && (
-                          <img src={question.imageUrl} alt="صورة السؤال" className="max-w-xs mb-2" />
-                        )}
-                        <p className="text-sm text-gray-600">
-                          إجابتك: {question.type === 'boolean' 
-                            ? (userAnswer === 1 ? 'صحيح' : 'خطأ')
-                            : (question.options?.[userAnswer as number] || 'لم تجب')
-                          }
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          الإجابة الصحيحة: {question.type === 'boolean' 
-                            ? (question.correctAnswer === 1 ? 'صحيح' : 'خطأ')
-                            : (question.options?.[question.correctAnswer as number])
-                          }
-                        </p>
-                      </div>
-                      <div className="mr-4">
-                        {isCorrect ? (
-                          <CheckCircle className="h-6 w-6 text-green-600" />
-                        ) : (
-                          <XCircle className="h-6 w-6 text-red-600" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            
-            <Button onClick={restartQuiz} className="w-full">
+            <Button 
+              onClick={() => {
+                setAnswers({});
+                setCheckedQuestions({});
+                setShowResults(false);
+              }} 
+              className="w-full max-w-md"
+            >
               إعادة الاختبار
             </Button>
           </CardContent>
@@ -160,8 +142,6 @@ const QuizPage: React.FC = () => {
       </div>
     );
   }
-
-  const question = questions[currentQuestion];
 
   return (
     <div className="container mx-auto p-6">
@@ -174,99 +154,195 @@ const QuizPage: React.FC = () => {
         العودة لصفحة المادة
       </Button>
 
-      <Card>
+      <Card className="mb-6">
         <CardHeader>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-500">{subject.name} - {unit.name}</span>
-            <span className="text-sm text-gray-500">
-              السؤال {currentQuestion + 1} من {questions.length}
+            <span className="text-sm text-muted-foreground">{subject.name} - {unit.name}</span>
+            <span className="text-sm text-muted-foreground">
+              {Object.keys(answers).length} من {questions.length} سؤال مُجاب
             </span>
           </div>
-          <CardTitle className="text-xl">{quiz.name}</CardTitle>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-primary h-2 rounded-full transition-all"
-              style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
-            />
-          </div>
+          <CardTitle className="text-xl">{quiz.title}</CardTitle>
+          <p className="text-muted-foreground">{quiz.description}</p>
         </CardHeader>
-        <CardContent>
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-4">{question.text}</h3>
-            {question.imageUrl && (
-              <img 
-                src={question.imageUrl} 
-                alt="صورة السؤال" 
-                className="max-w-md mb-4 rounded-lg"
-              />
-            )}
-            
-            <div className="space-y-3">
-              {question.type === 'multiple' ? (
-                question.options?.map((option, index) => (
-                  <div key={index} className="flex items-center">
-                    <input
-                      type="radio"
-                      id={`option-${index}`}
-                      name={`question-${question.id}`}
-                      value={index}
-                      checked={answers[question.id] === index}
-                      onChange={() => handleAnswerSelect(question.id, index)}
-                      className="ml-3"
-                    />
-                    <label htmlFor={`option-${index}`} className="cursor-pointer">
-                      {option}
-                    </label>
-                  </div>
-                ))
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      id="true"
-                      name={`question-${question.id}`}
-                      value={1}
-                      checked={answers[question.id] === 1}
-                      onChange={() => handleAnswerSelect(question.id, 1)}
-                      className="ml-3"
-                    />
-                    <label htmlFor="true" className="cursor-pointer">صحيح</label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      id="false"
-                      name={`question-${question.id}`}
-                      value={0}
-                      checked={answers[question.id] === 0}
-                      onChange={() => handleAnswerSelect(question.id, 0)}
-                      className="ml-3"
-                    />
-                    <label htmlFor="false" className="cursor-pointer">خطأ</label>
+      </Card>
+
+      <div className="space-y-6">
+        {questions.map((question, index) => {
+          const isAnswered = answers[question.id] !== undefined;
+          const isChecked = checkedQuestions[question.id];
+          const isCorrect = isChecked ? isQuestionCorrect(question) : null;
+          
+          return (
+            <Card 
+              key={question.id} 
+              className={`${
+                isChecked 
+                  ? isCorrect 
+                    ? 'border-green-500 bg-green-50 dark:bg-green-950/20' 
+                    : 'border-red-500 bg-red-50 dark:bg-red-950/20'
+                  : ''
+              }`}
+            >
+              <CardContent className="p-6">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold mb-4">
+                    السؤال {index + 1}: {question.text}
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    {question.type === 'multiple_choice' ? (
+                      question.options?.map((option: string, optionIndex: number) => {
+                        const isSelected = answers[question.id] === option;
+                        const isCorrectOption = option === question.correct_answer;
+                        
+                        let optionClass = 'flex items-center p-3 border rounded-lg cursor-pointer transition-colors';
+                        
+                        if (isChecked) {
+                          if (isCorrectOption) {
+                            optionClass += ' border-green-500 bg-green-100 dark:bg-green-950/30';
+                          } else if (isSelected && !isCorrectOption) {
+                            optionClass += ' border-red-500 bg-red-100 dark:bg-red-950/30';
+                          } else {
+                            optionClass += ' border-muted bg-muted/30';
+                          }
+                        } else {
+                          if (isSelected) {
+                            optionClass += ' border-primary bg-primary/10';
+                          } else {
+                            optionClass += ' border-muted hover:border-primary/50';
+                          }
+                        }
+                        
+                        return (
+                          <div
+                            key={optionIndex}
+                            className={optionClass}
+                            onClick={() => !isChecked && handleAnswerSelect(question.id, option)}
+                          >
+                            <input
+                              type="radio"
+                              name={`question-${question.id}`}
+                              checked={isSelected}
+                              onChange={() => !isChecked && handleAnswerSelect(question.id, option)}
+                              className="ml-3"
+                              disabled={isChecked}
+                            />
+                            <span className="flex-1">{option}</span>
+                            {isChecked && isCorrectOption && (
+                              <Check className="h-5 w-5 text-green-600" />
+                            )}
+                            {isChecked && isSelected && !isCorrectOption && (
+                              <X className="h-5 w-5 text-red-600" />
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="space-y-3">
+                        {['true', 'false'].map((boolValue) => {
+                          const isSelected = answers[question.id] === boolValue;
+                          const isCorrectOption = boolValue === question.correct_answer;
+                          const label = boolValue === 'true' ? 'صحيح' : 'خطأ';
+                          
+                          let optionClass = 'flex items-center p-3 border rounded-lg cursor-pointer transition-colors';
+                          
+                          if (isChecked) {
+                            if (isCorrectOption) {
+                              optionClass += ' border-green-500 bg-green-100 dark:bg-green-950/30';
+                            } else if (isSelected && !isCorrectOption) {
+                              optionClass += ' border-red-500 bg-red-100 dark:bg-red-950/30';
+                            } else {
+                              optionClass += ' border-muted bg-muted/30';
+                            }
+                          } else {
+                            if (isSelected) {
+                              optionClass += ' border-primary bg-primary/10';
+                            } else {
+                              optionClass += ' border-muted hover:border-primary/50';
+                            }
+                          }
+                          
+                          return (
+                            <div
+                              key={boolValue}
+                              className={optionClass}
+                              onClick={() => !isChecked && handleAnswerSelect(question.id, boolValue)}
+                            >
+                              <input
+                                type="radio"
+                                name={`question-${question.id}`}
+                                checked={isSelected}
+                                onChange={() => !isChecked && handleAnswerSelect(question.id, boolValue)}
+                                className="ml-3"
+                                disabled={isChecked}
+                              />
+                              <span className="flex-1">{label}</span>
+                              {isChecked && isCorrectOption && (
+                                <Check className="h-5 w-5 text-green-600" />
+                              )}
+                              {isChecked && isSelected && !isCorrectOption && (
+                                <X className="h-5 w-5 text-red-600" />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={handlePrevious}
-              disabled={currentQuestion === 0}
-            >
-              السابق
-            </Button>
-            <Button
-              onClick={handleNext}
-              disabled={answers[question.id] === undefined}
-            >
-              {currentQuestion === questions.length - 1 ? 'إنهاء الاختبار' : 'التالي'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+                
+                <div className="flex justify-between items-center pt-4 border-t">
+                  <div className="flex space-x-3">
+                    {!isChecked && isAnswered && (
+                      <Button
+                        onClick={() => handleCheckQuestion(question.id)}
+                        size="sm"
+                      >
+                        تصحيح السؤال
+                      </Button>
+                    )}
+                    
+                    {isChecked && question.explanation && (
+                      <Button
+                        onClick={() => handleExplanation(question)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <BookOpen className="ml-2 h-4 w-4" />
+                        التفسير
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {isChecked && (
+                    <div className="flex items-center">
+                      {isCorrect ? (
+                        <span className="text-green-600 font-medium">إجابة صحيحة</span>
+                      ) : (
+                        <span className="text-red-600 font-medium">إجابة خاطئة</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {Object.keys(answers).length === questions.length && (
+        <div className="mt-8 text-center">
+          <Button 
+            onClick={handleCheckAllQuiz}
+            size="lg"
+            className="w-full max-w-md"
+          >
+            <Trophy className="ml-2 h-5 w-5" />
+            تصحيح الاختبار وعرض النتائج
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

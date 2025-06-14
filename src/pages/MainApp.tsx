@@ -18,6 +18,7 @@ import UnitPage from './UnitPage';
 import UnitQuizzesPage from './UnitQuizzesPage';
 import LessonPage from './LessonPage';
 import QuizPage from './QuizPage';
+import QuizExplanationPage from './QuizExplanationPage';
 import NotificationsPage from './NotificationsPage';
 import ProfilePage from './ProfilePage';
 
@@ -106,6 +107,7 @@ const MainApp: React.FC = () => {
             <Route path="/unit/:id/quizzes" element={<UnitQuizzesPage />} />
             <Route path="/lesson/:id" element={<LessonPage />} />
             <Route path="/quiz/:id" element={<QuizPage />} />
+            <Route path="/quiz/:quizId/explanation/:questionId" element={<QuizExplanationPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Routes>

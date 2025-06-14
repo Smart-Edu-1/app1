@@ -10,6 +10,7 @@ interface SupabaseAppDataContextType {
   codes: any[];
   users: any[];
   notifications: any[];
+  appSettings: any;
   loading: boolean;
   
   // Functions for subjects
@@ -46,6 +47,9 @@ interface SupabaseAppDataContextType {
   markNotificationAsRead: (id: string) => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
   
+  // Functions for app settings
+  updateAppSettings: (settings: any) => Promise<void>;
+  
   // Helper functions
   getLessonsByUnit: (unitId: string) => any[];
   getQuizzesByUnit: (unitId: string) => any[];
@@ -65,6 +69,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
   const [codes, setCodes] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [appSettings, setAppSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
   
   const { toast } = useToast();
@@ -210,6 +215,14 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
 
       console.log('🔔 بيانات الإشعارات:', notificationsData, 'خطأ:', notificationsError);
 
+      // Load app settings
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('app_settings')
+        .select('*')
+        .single();
+
+      console.log('⚙️ بيانات الإعدادات:', settingsData, 'خطأ:', settingsError);
+
       if (subjectsError) {
         console.error('❌ خطأ في تحميل المواد:', subjectsError);
         throw subjectsError;
@@ -222,6 +235,26 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       const transformedCodes = (codesData || []).map(transformCode);
       const transformedUsers = (usersData || []).map(transformUser);
       const transformedNotifications = (notificationsData || []).map(transformNotification);
+      const transformedSettings = settingsData ? {
+        appName: settingsData.app_name,
+        aboutText: settingsData.about_text,
+        subscriptionPrices: {
+          monthly: settingsData.monthly_price,
+          quarterly: settingsData.quarterly_price,
+          yearly: settingsData.yearly_price
+        },
+        themeColors: {
+          primary: settingsData.primary_color,
+          secondary: settingsData.secondary_color,
+          accent: settingsData.accent_color
+        },
+        contactMethods: settingsData.contact_methods || [],
+        subscriptionPlans: settingsData.subscription_plans || [],
+        adminCredentials: {
+          username: settingsData.admin_username,
+          password: settingsData.admin_password
+        }
+      } : {};
 
       console.log('✅ البيانات المحولة:', {
         subjects: transformedSubjects.length,
@@ -230,7 +263,8 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
         quizzes: transformedQuizzes.length,
         codes: transformedCodes.length,
         users: transformedUsers.length,
-        notifications: transformedNotifications.length
+        notifications: transformedNotifications.length,
+        settings: transformedSettings
       });
 
       setSubjects(transformedSubjects);
@@ -240,6 +274,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       setCodes(transformedCodes);
       setUsers(transformedUsers);
       setNotifications(transformedNotifications);
+      setAppSettings(transformedSettings);
     } catch (error) {
       console.error('💥 خطأ في تحميل البيانات:', error);
       toast({
@@ -316,6 +351,15 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       )
       .subscribe();
 
+    // Listen to app settings changes
+    const settingsChannel = supabase
+      .channel('settings-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'app_settings' }, 
+        () => loadData()
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(subjectsChannel);
       supabase.removeChannel(unitsChannel);
@@ -324,6 +368,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       supabase.removeChannel(codesChannel);
       supabase.removeChannel(notificationsChannel);
       supabase.removeChannel(usersChannel);
+      supabase.removeChannel(settingsChannel);
     };
   };
 
@@ -801,6 +846,38 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     }
   };
 
+  // App Settings functions
+  const updateAppSettings = async (settings: any) => {
+    try {
+      const { error } = await supabase
+        .from('app_settings')
+        .update({
+          app_name: settings.appName,
+          about_text: settings.aboutText,
+          monthly_price: settings.subscriptionPrices.monthly,
+          quarterly_price: settings.subscriptionPrices.quarterly,
+          yearly_price: settings.subscriptionPrices.yearly,
+          primary_color: settings.themeColors.primary,
+          secondary_color: settings.themeColors.secondary,
+          accent_color: settings.themeColors.accent,
+          contact_methods: settings.contactMethods,
+          subscription_plans: settings.subscriptionPlans,
+          admin_username: settings.adminCredentials.username,
+          admin_password: settings.adminCredentials.password
+        })
+        .eq('id', (await supabase.from('app_settings').select('id').single()).data?.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating app settings:', error);
+      toast({
+        title: "خطأ في تحديث الإعدادات",
+        description: "حدث خطأ أثناء تحديث إعدادات التطبيق",
+        variant: "destructive"
+      });
+    }
+  };
+
   const value: SupabaseAppDataContextType = {
     subjects,
     units,
@@ -809,6 +886,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     codes,
     users,
     notifications,
+    appSettings,
     loading,
     addSubject,
     updateSubject,
@@ -830,6 +908,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     addNotification,
     markNotificationAsRead,
     deleteNotification,
+    updateAppSettings,
     getLessonsByUnit,
     getQuizzesByUnit
   };

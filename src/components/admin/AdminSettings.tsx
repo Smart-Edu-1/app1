@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -10,17 +10,34 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useData } from '@/contexts/DataContext';
+import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Save } from 'lucide-react';
 
 const AdminSettings: React.FC = () => {
-  const { settings, updateSettings } = useData();
-  const [formData, setFormData] = useState(settings);
+  const { appSettings, updateAppSettings } = useSupabaseAppData();
+  const [formData, setFormData] = useState(() => ({
+    ...appSettings,
+    contactMethods: appSettings.contactMethods || [],
+    subscriptionPlans: appSettings.subscriptionPlans || [],
+    themeColors: appSettings.themeColors || { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' },
+    adminCredentials: appSettings.adminCredentials || { username: '', password: '' }
+  }));
   const { toast } = useToast();
 
-  const handleSave = () => {
-    updateSettings(formData);
+  // Update formData when appSettings change
+  useEffect(() => {
+    setFormData({
+      ...appSettings,
+      contactMethods: appSettings.contactMethods || [],
+      subscriptionPlans: appSettings.subscriptionPlans || [],
+      themeColors: appSettings.themeColors || { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' },
+      adminCredentials: appSettings.adminCredentials || { username: '', password: '' }
+    });
+  }, [appSettings]);
+
+  const handleSave = async () => {
+    await updateAppSettings(formData);
     toast({
       title: "تم الحفظ",
       description: "تم حفظ إعدادات التطبيق بنجاح"

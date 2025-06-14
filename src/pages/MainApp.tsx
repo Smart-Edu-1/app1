@@ -3,6 +3,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
+import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -87,22 +88,24 @@ const HomePage = () => {
 
 const MainApp: React.FC = () => {
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/subject/:id" element={<SubjectPage />} />
-          <Route path="/lesson/:id" element={<LessonPage />} />
-          <Route path="/quiz/:id" element={<QuizPage />} />
-          <Route path="/notifications" element={<NotificationsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-        </Routes>
-      </main>
-    </div>
+    <AppSettingsProvider>
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/subject/:id" element={<SubjectPage />} />
+            <Route path="/lesson/:id" element={<LessonPage />} />
+            <Route path="/quiz/:id" element={<QuizPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+          </Routes>
+        </main>
+      </div>
+    </AppSettingsProvider>
   );
 };
 

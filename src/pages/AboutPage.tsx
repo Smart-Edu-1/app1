@@ -1,20 +1,20 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useAppSettings } from '@/contexts/AppSettingsContext';
 
 const AboutPage: React.FC = () => {
-  const { settings } = useAppData();
+  const { appName, aboutText } = useAppSettings();
 
   return (
     <div className="container mx-auto p-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-center text-2xl">لمحة عن {settings.appName}</CardTitle>
+          <CardTitle className="text-center text-2xl">لمحة عن {appName}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center space-y-4">
-            <p className="text-lg leading-relaxed">{settings.aboutText}</p>
+            <p className="text-lg leading-relaxed">{aboutText}</p>
             <div className="mt-8">
               <h3 className="text-xl font-semibold mb-4">مميزات التطبيق</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

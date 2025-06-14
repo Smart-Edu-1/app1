@@ -32,28 +32,55 @@ export type Database = {
       }
       app_settings: {
         Row: {
+          about_text: string | null
+          accent_color: string | null
+          admin_password: string | null
+          admin_username: string | null
+          app_name: string
+          contact_methods: Json | null
           created_at: string
-          description: string | null
           id: string
-          setting_key: string
-          setting_value: string | null
+          monthly_price: number | null
+          primary_color: string | null
+          quarterly_price: number | null
+          secondary_color: string | null
+          subscription_plans: Json | null
           updated_at: string
+          yearly_price: number | null
         }
         Insert: {
+          about_text?: string | null
+          accent_color?: string | null
+          admin_password?: string | null
+          admin_username?: string | null
+          app_name?: string
+          contact_methods?: Json | null
           created_at?: string
-          description?: string | null
           id?: string
-          setting_key: string
-          setting_value?: string | null
+          monthly_price?: number | null
+          primary_color?: string | null
+          quarterly_price?: number | null
+          secondary_color?: string | null
+          subscription_plans?: Json | null
           updated_at?: string
+          yearly_price?: number | null
         }
         Update: {
+          about_text?: string | null
+          accent_color?: string | null
+          admin_password?: string | null
+          admin_username?: string | null
+          app_name?: string
+          contact_methods?: Json | null
           created_at?: string
-          description?: string | null
           id?: string
-          setting_key?: string
-          setting_value?: string | null
+          monthly_price?: number | null
+          primary_color?: string | null
+          quarterly_price?: number | null
+          secondary_color?: string | null
+          subscription_plans?: Json | null
           updated_at?: string
+          yearly_price?: number | null
         }
         Relationships: []
       }

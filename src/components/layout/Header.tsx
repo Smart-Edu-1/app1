@@ -5,12 +5,14 @@ import { Bell, Menu } from 'lucide-react';
 import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useAppSettings } from '@/contexts/AppSettingsContext';
 import Sidebar from './Sidebar';
 
 const Header: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { notifications } = useSupabaseAppData();
   const { user } = useAuth();
+  const { appName } = useAppSettings();
   const navigate = useNavigate();
 
   const unreadCount = notifications.filter(n => 
@@ -29,7 +31,7 @@ const Header: React.FC = () => {
             <Menu className="h-6 w-6" />
           </Button>
 
-          <h1 className="text-xl font-bold text-center flex-1">Smart Edu</h1>
+          <h1 className="text-xl font-bold text-center flex-1">{appName}</h1>
 
           <div className="relative">
             <Button

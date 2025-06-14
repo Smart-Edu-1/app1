@@ -3,15 +3,45 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useAppSettings } from '@/contexts/AppSettingsContext';
 
 const PricingPage: React.FC = () => {
-  const { settings } = useAppData();
+  const { subscriptionPlans, subscriptionPrices } = useAppSettings();
 
-  // Ensure subscriptionPlans exists and is an array
-  const subscriptionPlans = settings?.subscriptionPlans || [];
+  // Default pricing plans if none are configured
+  const defaultPlans = [
+    {
+      id: '1',
+      name: 'شهري',
+      price: subscriptionPrices.monthly,
+      currency: 'ريال',
+      duration: 1,
+      description: 'خطة مثالية للطلاب',
+      features: ['جميع الدروس', 'دعم فني', 'اختبارات تفاعلية']
+    },
+    {
+      id: '2', 
+      name: 'ربع سنوي',
+      price: subscriptionPrices.quarterly,
+      currency: 'ريال',
+      duration: 3,
+      description: 'خطة موصى بها',
+      features: ['جميع الدروس', 'دعم فني متقدم', 'اختبارات تفاعلية', 'متابعة شخصية']
+    },
+    {
+      id: '3',
+      name: 'سنوي', 
+      price: subscriptionPrices.yearly,
+      currency: 'ريال',
+      duration: 12,
+      description: 'أفضل قيمة',
+      features: ['جميع الدروس', 'دعم فني مميز', 'اختبارات تفاعلية', 'متابعة شخصية', 'خصومات خاصة']
+    }
+  ];
 
-  if (subscriptionPlans.length === 0) {
+  const plansToShow = subscriptionPlans.length > 0 ? subscriptionPlans : defaultPlans;
+
+  if (plansToShow.length === 0) {
     return (
       <div className="container mx-auto p-6">
         <Card>
@@ -40,7 +70,7 @@ const PricingPage: React.FC = () => {
             <p className="text-lg">اختر الخطة التي تناسبك للحصول على أفضل تجربة تعليمية</p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {subscriptionPlans.map((plan, index) => (
+              {plansToShow.map((plan, index) => (
                 <Card 
                   key={plan.id} 
                   className={`border-2 hover:border-primary transition-colors ${

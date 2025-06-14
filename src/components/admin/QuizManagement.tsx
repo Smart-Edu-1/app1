@@ -25,7 +25,6 @@ const QuizManagement = () => {
     title: '',
     description: '',
     subject_id: '',
-    time_limit: 30,
     is_active: true
   });
 
@@ -77,7 +76,6 @@ const QuizManagement = () => {
         title: '', 
         description: '', 
         subject_id: '', 
-        time_limit: 30,
         is_active: true 
       });
     } catch (error) {
@@ -149,7 +147,6 @@ const QuizManagement = () => {
       title: quiz.title,
       description: quiz.description,
       subject_id: quiz.subject_id || '',
-      time_limit: quiz.time_limit || 30,
       is_active: quiz.is_active
     });
     setIsQuizDialogOpen(true);
@@ -395,17 +392,6 @@ const QuizManagement = () => {
                     placeholder="وصف مختصر عن الاختبار"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="time_limit">المدة (بالدقائق)</Label>
-                  <Input
-                    id="time_limit"
-                    type="number"
-                    value={quizFormData.time_limit}
-                    onChange={(e) => setQuizFormData({ ...quizFormData, time_limit: parseInt(e.target.value) || 30 })}
-                    min="1"
-                    placeholder="30"
-                  />
-                </div>
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="is_active"
@@ -437,7 +423,6 @@ const QuizManagement = () => {
                 <TableHead>اسم الاختبار</TableHead>
                 <TableHead>المادة</TableHead>
                 <TableHead>عدد الأسئلة</TableHead>
-                <TableHead>المدة</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>الإجراءات</TableHead>
               </TableRow>
@@ -451,7 +436,6 @@ const QuizManagement = () => {
                     <TableCell className="font-medium">{quiz.title}</TableCell>
                     <TableCell>{subject?.name || 'غير محدد'}</TableCell>
                     <TableCell>{questionCount}</TableCell>
-                    <TableCell>{quiz.time_limit} دقيقة</TableCell>
                     <TableCell>
                       <Badge variant={quiz.is_active ? "default" : "secondary"}>
                         {quiz.is_active ? 'نشط' : 'معطل'}

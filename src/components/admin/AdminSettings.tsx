@@ -16,24 +16,34 @@ import { Settings, Save } from 'lucide-react';
 
 const AdminSettings: React.FC = () => {
   const { appSettings, updateAppSettings } = useSupabaseAppData();
-  const [formData, setFormData] = useState(() => ({
-    ...appSettings,
-    contactMethods: appSettings.contactMethods || [],
-    subscriptionPlans: appSettings.subscriptionPlans || [],
-    themeColors: appSettings.themeColors || { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' },
-    adminCredentials: appSettings.adminCredentials || { username: '', password: '' }
-  }));
+  const [formData, setFormData] = useState(() => {
+    console.log('🔍 إعدادات التطبيق الحالية:', appSettings);
+    return {
+      appName: appSettings.appName || 'منصة التعلم',
+      aboutText: appSettings.aboutText || 'منصة تعليمية شاملة تقدم أفضل المحتوى التعليمي',
+      subscriptionPrices: appSettings.subscriptionPrices || { monthly: 9.99, quarterly: 24.99, yearly: 89.99 },
+      contactMethods: appSettings.contactMethods || [],
+      subscriptionPlans: appSettings.subscriptionPlans || [],
+      themeColors: appSettings.themeColors || { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' },
+      adminCredentials: appSettings.adminCredentials || { username: 'admin', password: 'admin123' }
+    };
+  });
   const { toast } = useToast();
 
   // Update formData when appSettings change
   useEffect(() => {
-    setFormData({
-      ...appSettings,
-      contactMethods: appSettings.contactMethods || [],
-      subscriptionPlans: appSettings.subscriptionPlans || [],
-      themeColors: appSettings.themeColors || { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' },
-      adminCredentials: appSettings.adminCredentials || { username: '', password: '' }
-    });
+    console.log('🔄 تحديث البيانات في useEffect:', appSettings);
+    if (Object.keys(appSettings).length > 0) {
+      setFormData({
+        appName: appSettings.appName || 'منصة التعلم',
+        aboutText: appSettings.aboutText || 'منصة تعليمية شاملة تقدم أفضل المحتوى التعليمي',
+        subscriptionPrices: appSettings.subscriptionPrices || { monthly: 9.99, quarterly: 24.99, yearly: 89.99 },
+        contactMethods: appSettings.contactMethods || [],
+        subscriptionPlans: appSettings.subscriptionPlans || [],
+        themeColors: appSettings.themeColors || { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' },
+        adminCredentials: appSettings.adminCredentials || { username: 'admin', password: 'admin123' }
+      });
+    }
   }, [appSettings]);
 
   const handleSave = async () => {

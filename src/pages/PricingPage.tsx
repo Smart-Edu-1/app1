@@ -4,36 +4,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
+import { useNavigate } from 'react-router-dom';
 
 const PricingPage: React.FC = () => {
-  const { subscriptionPlans, subscriptionPrices } = useAppSettings();
+  const { subscriptionPlans } = useAppSettings();
+  const navigate = useNavigate();
 
-  // Default pricing plans if none are configured
+  // Default subscription plans if none are configured
   const defaultPlans = [
     {
       id: '1',
-      name: 'شهري',
-      price: subscriptionPrices.monthly,
-      currency: 'ريال',
-      duration: 1,
+      name: 'الخطة الأساسية',
       description: 'خطة مثالية للطلاب',
       features: ['جميع الدروس', 'دعم فني', 'اختبارات تفاعلية']
     },
     {
       id: '2', 
-      name: 'ربع سنوي',
-      price: subscriptionPrices.quarterly,
-      currency: 'ريال',
-      duration: 3,
+      name: 'الخطة المتقدمة',
       description: 'خطة موصى بها',
       features: ['جميع الدروس', 'دعم فني متقدم', 'اختبارات تفاعلية', 'متابعة شخصية']
     },
     {
       id: '3',
-      name: 'سنوي', 
-      price: subscriptionPrices.yearly,
-      currency: 'ريال',
-      duration: 12,
+      name: 'الخطة المميزة', 
       description: 'أفضل قيمة',
       features: ['جميع الدروس', 'دعم فني مميز', 'اختبارات تفاعلية', 'متابعة شخصية', 'خصومات خاصة']
     }
@@ -84,12 +77,6 @@ const PricingPage: React.FC = () => {
                       </div>
                     )}
                     <CardTitle className="text-xl">{plan.name}</CardTitle>
-                    <div className="text-3xl font-bold text-primary">
-                      {plan.price} {plan.currency}
-                      <span className="text-lg font-normal text-gray-600">
-                        /{plan.duration} شهر
-                      </span>
-                    </div>
                     <p className="text-sm text-gray-600">{plan.description}</p>
                   </CardHeader>
                   <CardContent>
@@ -104,6 +91,7 @@ const PricingPage: React.FC = () => {
                     <Button 
                       className={`w-full mt-6 ${index === 1 ? '' : 'variant-outline'}`}
                       variant={index === 1 ? 'default' : 'outline'}
+                      onClick={() => navigate('/distribution-centers')}
                     >
                       اختيار الخطة
                     </Button>
@@ -112,11 +100,14 @@ const PricingPage: React.FC = () => {
               ))}
             </div>
 
-            <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-              <h3 className="font-semibold mb-2">كيفية الاشتراك؟</h3>
-              <p className="text-sm text-gray-600">
-                تواصل معنا للحصول على كود التفعيل وتفعيل حسابك للاستفادة من جميع المميزات
-              </p>
+            <div className="mt-8 p-4 bg-blue-50 rounded-lg text-center">
+              <h3 className="font-semibold mb-4">يمكنك التواصل مع الدعم لطلب كود التفعيل</h3>
+              <Button 
+                onClick={() => window.open('https://wa.me/1234567890', '_blank')}
+                className="bg-green-500 hover:bg-green-600"
+              >
+                تواصل مع الدعم
+              </Button>
             </div>
           </div>
         </CardContent>

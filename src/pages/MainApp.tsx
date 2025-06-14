@@ -12,6 +12,7 @@ import Header from '@/components/layout/Header';
 import AboutPage from './AboutPage';
 import ContactPage from './ContactPage';
 import PricingPage from './PricingPage';
+import DistributionCentersPage from './DistributionCentersPage';
 import SubjectPage from './SubjectPage';
 import LessonPage from './LessonPage';
 import QuizPage from './QuizPage';
@@ -97,6 +98,7 @@ const MainApp: React.FC = () => {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/distribution-centers" element={<DistributionCentersPage />} />
             <Route path="/subject/:id" element={<SubjectPage />} />
             <Route path="/lesson/:id" element={<LessonPage />} />
             <Route path="/quiz/:id" element={<QuizPage />} />

@@ -849,27 +849,63 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
   // App Settings functions
   const updateAppSettings = async (settings: any) => {
     try {
-      const { error } = await supabase
+      console.log('🔄 تحديث إعدادات التطبيق:', settings);
+      
+      // Get the first (and should be only) app_settings record
+      const { data: existingSettings } = await supabase
         .from('app_settings')
-        .update({
-          app_name: settings.appName,
-          about_text: settings.aboutText,
-          monthly_price: settings.subscriptionPrices.monthly,
-          quarterly_price: settings.subscriptionPrices.quarterly,
-          yearly_price: settings.subscriptionPrices.yearly,
-          primary_color: settings.themeColors.primary,
-          secondary_color: settings.themeColors.secondary,
-          accent_color: settings.themeColors.accent,
-          contact_methods: settings.contactMethods,
-          subscription_plans: settings.subscriptionPlans,
-          admin_username: settings.adminCredentials.username,
-          admin_password: settings.adminCredentials.password
-        })
-        .eq('id', (await supabase.from('app_settings').select('id').single()).data?.id);
+        .select('id')
+        .limit(1)
+        .single();
 
-      if (error) throw error;
+      if (!existingSettings) {
+        console.log('📝 إنشاء إعدادات جديدة...');
+        // If no settings exist, create new ones
+        const { error: insertError } = await supabase
+          .from('app_settings')
+          .insert({
+            app_name: settings.appName,
+            about_text: settings.aboutText,
+            monthly_price: settings.subscriptionPrices?.monthly || 9.99,
+            quarterly_price: settings.subscriptionPrices?.quarterly || 24.99,
+            yearly_price: settings.subscriptionPrices?.yearly || 89.99,
+            primary_color: settings.themeColors?.primary || '#3B82F6',
+            secondary_color: settings.themeColors?.secondary || '#10B981',
+            accent_color: settings.themeColors?.accent || '#F59E0B',
+            contact_methods: settings.contactMethods || [],
+            subscription_plans: settings.subscriptionPlans || [],
+            admin_username: settings.adminCredentials?.username || 'admin',
+            admin_password: settings.adminCredentials?.password || 'admin123'
+          });
+        
+        if (insertError) throw insertError;
+      } else {
+        console.log('🔄 تحديث الإعدادات الموجودة...', existingSettings.id);
+        // Update existing settings
+        const { error: updateError } = await supabase
+          .from('app_settings')
+          .update({
+            app_name: settings.appName,
+            about_text: settings.aboutText,
+            monthly_price: settings.subscriptionPrices?.monthly || 9.99,
+            quarterly_price: settings.subscriptionPrices?.quarterly || 24.99,
+            yearly_price: settings.subscriptionPrices?.yearly || 89.99,
+            primary_color: settings.themeColors?.primary || '#3B82F6',
+            secondary_color: settings.themeColors?.secondary || '#10B981',
+            accent_color: settings.themeColors?.accent || '#F59E0B',
+            contact_methods: settings.contactMethods || [],
+            subscription_plans: settings.subscriptionPlans || [],
+            admin_username: settings.adminCredentials?.username || 'admin',
+            admin_password: settings.adminCredentials?.password || 'admin123'
+          })
+          .eq('id', existingSettings.id);
+
+        if (updateError) throw updateError;
+      }
+      
+      console.log('✅ تم تحديث الإعدادات بنجاح');
     } catch (error) {
-      console.error('Error updating app settings:', error);
+      console.error('❌ خطأ في تحديث إعدادات التطبيق:', error);
       toast({
         title: "خطأ في تحديث الإعدادات",
         description: "حدث خطأ أثناء تحديث إعدادات التطبيق",

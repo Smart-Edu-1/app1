@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,25 +9,23 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2, Play } from 'lucide-react';
-import { useFirebaseAppData } from '@/contexts/FirebaseAppDataContext';
+import { useAppData } from '@/contexts/AppDataContext';
 import { useToast } from '@/hooks/use-toast';
-import ImageUpload from '@/components/ui/image-upload';
 
 const LessonManagement = () => {
-  const { lessons, units, subjects, addLesson, updateLesson, deleteLesson } = useFirebaseAppData();
+  const { lessons, units, subjects, addLesson, updateLesson, deleteLesson } = useAppData();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<any>(null);
   const [formData, setFormData] = useState({
-    name: '',
+    title: '',
     description: '',
-    unitId: '',
-    videoUrl: '',
-    imageUrl: '',
-    isPremium: false,
-    order: 1,
-    teacherContact: '',
-    isActive: true
+    unit_id: '',
+    video_url: '',
+    image_url: '',
+    is_free: false,
+    order_index: 1,
+    is_active: true
   });
 
   const handleSubmit = () => {
@@ -49,30 +46,28 @@ const LessonManagement = () => {
     setIsDialogOpen(false);
     setEditingLesson(null);
     setFormData({ 
-      name: '', 
+      title: '', 
       description: '', 
-      unitId: '', 
-      videoUrl: '', 
-      imageUrl: '', 
-      isPremium: false, 
-      order: 1, 
-      teacherContact: '', 
-      isActive: true 
+      unit_id: '', 
+      video_url: '', 
+      image_url: '', 
+      is_free: false, 
+      order_index: 1,
+      is_active: true 
     });
   };
 
   const handleEdit = (lesson: any) => {
     setEditingLesson(lesson);
     setFormData({
-      name: lesson.name,
-      description: lesson.description,
-      unitId: lesson.unitId,
-      videoUrl: lesson.videoUrl,
-      imageUrl: lesson.imageUrl || '',
-      isPremium: lesson.isPremium,
-      order: lesson.order,
-      teacherContact: lesson.teacherContact || '',
-      isActive: lesson.isActive
+      title: lesson.title || '',
+      description: lesson.description || '',
+      unit_id: lesson.unit_id || '',
+      video_url: lesson.video_url || '',
+      image_url: lesson.image_url || '',
+      is_free: lesson.is_free || false,
+      order_index: lesson.order_index || 1,
+      is_active: lesson.is_active
     });
     setIsDialogOpen(true);
   };
@@ -106,16 +101,16 @@ const LessonManagement = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="unitId">الوحدة</Label>
+                <Label htmlFor="unit_id">الوحدة</Label>
                 <select
-                  id="unitId"
-                  value={formData.unitId}
-                  onChange={(e) => setFormData({ ...formData, unitId: e.target.value })}
+                  id="unit_id"
+                  value={formData.unit_id}
+                  onChange={(e) => setFormData({ ...formData, unit_id: e.target.value })}
                   className="w-full p-2 border rounded-md"
                 >
                   <option value="">اختر الوحدة</option>
                   {units.map(unit => {
-                    const subject = subjects.find(s => s.id === unit.subjectId);
+                    const subject = subjects.find(s => s.id === unit.subject_id);
                     return (
                       <option key={unit.id} value={unit.id}>
                         {subject?.name} - {unit.name}
@@ -125,11 +120,11 @@ const LessonManagement = () => {
                 </select>
               </div>
               <div>
-                <Label htmlFor="name">اسم الدرس</Label>
+                <Label htmlFor="title">اسم الدرس</Label>
                 <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   placeholder="مثال: مقدمة في الفيزياء"
                 />
               </div>
@@ -143,47 +138,31 @@ const LessonManagement = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="videoUrl">رابط الفيديو</Label>
+                <Label htmlFor="video_url">رابط الفيديو</Label>
                 <Input
-                  id="videoUrl"
-                  value={formData.videoUrl}
-                  onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                  id="video_url"
+                  value={formData.video_url}
+                  onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
                   placeholder="https://example.com/video.mp4"
                 />
               </div>
-              <ImageUpload
-                currentImageUrl={formData.imageUrl}
-                onImageChange={(imageUrl) => setFormData({ ...formData, imageUrl })}
-                folder="lessons"
-                label="صورة غلاف الدرس"
-                aspectRatio="600x375"
-              />
               <div>
-                <Label htmlFor="teacherContact">تواصل مع المدرس</Label>
+                <Label htmlFor="order_index">ترتيب الدرس</Label>
                 <Input
-                  id="teacherContact"
-                  value={formData.teacherContact}
-                  onChange={(e) => setFormData({ ...formData, teacherContact: e.target.value })}
-                  placeholder="رقم الواتساب أو البريد الإلكتروني"
-                />
-              </div>
-              <div>
-                <Label htmlFor="order">ترتيب الدرس</Label>
-                <Input
-                  id="order"
+                  id="order_index"
                   type="number"
-                  value={formData.order}
-                  onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
+                  value={formData.order_index}
+                  onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) })}
                   min="1"
                 />
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
-                  id="isPremium"
-                  checked={formData.isPremium}
-                  onCheckedChange={(checked) => setFormData({ ...formData, isPremium: checked })}
+                  id="is_free"
+                  checked={formData.is_free}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_free: checked })}
                 />
-                <Label htmlFor="isPremium">درس مدفوع</Label>
+                <Label htmlFor="is_free">درس مجاني</Label>
               </div>
               <Button onClick={handleSubmit} className="w-full">
                 {editingLesson ? 'حفظ التغييرات' : 'إضافة الدرس'}
@@ -204,51 +183,33 @@ const LessonManagement = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>الصورة</TableHead>
                 <TableHead>اسم الدرس</TableHead>
                 <TableHead>الوحدة</TableHead>
                 <TableHead>النوع</TableHead>
                 <TableHead>الترتيب</TableHead>
-                <TableHead>تاريخ الإنشاء</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>الإجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {lessons.map((lesson) => {
-                const unit = units.find(u => u.id === lesson.unitId);
-                const subject = unit ? subjects.find(s => s.id === unit.subjectId) : null;
+                const unit = units.find(u => u.id === lesson.unit_id);
+                const subject = unit ? subjects.find(s => s.id === unit.subject_id) : null;
                 return (
                   <TableRow key={lesson.id}>
-                    <TableCell>
-                      {lesson.imageUrl ? (
-                        <img 
-                          src={lesson.imageUrl} 
-                          alt={lesson.name}
-                          className="w-12 h-8 object-cover rounded"
-                        />
-                      ) : (
-                        <div className="w-12 h-8 bg-gray-200 rounded flex items-center justify-center">
-                          <span className="text-xs text-gray-500">لا توجد</span>
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">{lesson.name}</TableCell>
+                    <TableCell className="font-medium">{lesson.title}</TableCell>
                     <TableCell>
                       {subject?.name} - {unit?.name || 'غير محدد'}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={lesson.isPremium ? "destructive" : "secondary"}>
-                        {lesson.isPremium ? 'مدفوع' : 'مجاني'}
+                      <Badge variant={lesson.is_free ? "secondary" : "destructive"}>
+                        {lesson.is_free ? 'مجاني' : 'مدفوع'}
                       </Badge>
                     </TableCell>
-                    <TableCell>{lesson.order}</TableCell>
+                    <TableCell>{lesson.order_index}</TableCell>
                     <TableCell>
-                      {lesson.createdAt ? new Date(lesson.createdAt.seconds * 1000).toLocaleDateString('en-GB') : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={lesson.isActive ? "default" : "secondary"}>
-                        {lesson.isActive ? 'نشط' : 'معطل'}
+                      <Badge variant={lesson.is_active ? "default" : "secondary"}>
+                        {lesson.is_active ? 'نشط' : 'معطل'}
                       </Badge>
                     </TableCell>
                     <TableCell>

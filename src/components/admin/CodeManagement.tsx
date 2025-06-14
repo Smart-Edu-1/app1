@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,16 +7,16 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Plus, Copy, Trash2 } from 'lucide-react';
-import { useFirebaseAppData } from '@/contexts/FirebaseAppDataContext';
+import { useAppData } from '@/contexts/AppDataContext';
 import { useToast } from '@/hooks/use-toast';
 
 const CodeManagement = () => {
-  const { codes, addCode, deleteCode } = useFirebaseAppData();
+  const { codes, addCode, deleteCode } = useAppData();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newCode, setNewCode] = useState('');
 
-  const activeCodes = codes.filter(code => !code.isUsed && code.isActive);
+  const activeCodes = codes.filter(code => !code.isUsed);
   const usedCodes = codes.filter(code => code.isUsed);
 
   const generateRandomCode = () => {
@@ -31,17 +30,10 @@ const CodeManagement = () => {
 
   const handleAddCode = async () => {
     const code = newCode || generateRandomCode();
-    
-    // تحديد تاريخ انتهاء الصلاحية (سنة واحدة من الآن)
-    const expiryDate = new Date();
-    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
     await addCode({
       code,
-      isUsed: false,
-      isActive: true,
-      expiryDate: expiryDate.toISOString(),
-      createdAt: new Date().toISOString()
+      isUsed: false
     });
 
     toast({
@@ -141,9 +133,7 @@ const CodeManagement = () => {
               <TableRow>
                 <TableHead>الكود</TableHead>
                 <TableHead>تاريخ الإنشاء</TableHead>
-                <TableHead>تاريخ الانتهاء</TableHead>
                 <TableHead>الحالة</TableHead>
-                <TableHead>مستخدم من قبل</TableHead>
                 <TableHead>الإجراءات</TableHead>
               </TableRow>
             </TableHeader>
@@ -153,18 +143,7 @@ const CodeManagement = () => {
                   <TableCell className="font-mono font-bold">{code.code}</TableCell>
                   <TableCell>
                     {code.createdAt ? 
-                      (code.createdAt.seconds ? 
-                        new Date(code.createdAt.seconds * 1000).toLocaleDateString('en-GB') : 
-                        new Date(code.createdAt).toLocaleDateString('en-GB')
-                      ) : '-'
-                    }
-                  </TableCell>
-                  <TableCell>
-                    {code.expiryDate ? 
-                      (code.expiryDate.seconds ? 
-                        new Date(code.expiryDate.seconds * 1000).toLocaleDateString('en-GB') : 
-                        new Date(code.expiryDate).toLocaleDateString('en-GB')
-                      ) : '-'
+                      new Date(code.createdAt).toLocaleDateString('ar-SA') : '-'
                     }
                   </TableCell>
                   <TableCell>
@@ -172,7 +151,6 @@ const CodeManagement = () => {
                       {code.isUsed ? 'مستخدم' : 'متاح'}
                     </Badge>
                   </TableCell>
-                  <TableCell>{code.usedBy || '-'}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
                       <Button

@@ -58,7 +58,8 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
 
   useEffect(() => {
     loadData();
-    setupRealtimeListeners();
+    const cleanup = setupRealtimeListeners();
+    return cleanup;
   }, []);
 
   // Transform Supabase snake_case to camelCase

@@ -110,15 +110,13 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     setLoading(true);
     try {
       console.log('🔄 بدء تحميل البيانات من Supabase...');
-      console.log('🔗 Supabase URL:', supabase.supabaseUrl);
-      console.log('🔑 Supabase Key (أول 20 حرف):', supabase.supabaseKey?.substring(0, 20));
       
       // اختبار الاتصال أولاً
       console.log('🧪 اختبار الاتصال مع Supabase...');
-      const testResponse = await fetch(`${supabase.supabaseUrl}/rest/v1/subjects?select=count`, {
+      const testResponse = await fetch('https://nmzqqgcbfhvajzqyrequ.supabase.co/rest/v1/subjects?select=count', {
         headers: {
-          'apikey': supabase.supabaseKey || '',
-          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tenFxZ2NiZmh2YWp6cXlyZXF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5MDc5MDAsImV4cCI6MjA2NTQ4MzkwMH0.tIlI6hdFqCdvfOGojAOhfgAbhnFWil4EbR8-MZLkPOA',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tenFxZ2NiZmh2YWp6cXlyZXF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5MDc5MDAsImV4cCI6MjA2NTQ4MzkwMH0.tIlI6hdFqCdvfOGojAOhfgAbhnFWil4EbR8-MZLkPOA',
           'Content-Type': 'application/json'
         }
       });

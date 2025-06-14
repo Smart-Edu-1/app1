@@ -37,11 +37,22 @@ const AdminSettings: React.FC = () => {
   }, [appSettings]);
 
   const handleSave = async () => {
-    await updateAppSettings(formData);
-    toast({
-      title: "تم الحفظ",
-      description: "تم حفظ إعدادات التطبيق بنجاح"
-    });
+    console.log('📝 بدء عملية الحفظ من لوحة التحكم:', formData);
+    try {
+      await updateAppSettings(formData);
+      console.log('✅ تم الحفظ بنجاح من لوحة التحكم');
+      toast({
+        title: "تم الحفظ",
+        description: "تم حفظ إعدادات التطبيق بنجاح"
+      });
+    } catch (error) {
+      console.error('❌ خطأ في الحفظ من لوحة التحكم:', error);
+      toast({
+        title: "خطأ في الحفظ",
+        description: "حدث خطأ أثناء حفظ الإعدادات",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleInputChange = (field: string, value: string | number) => {

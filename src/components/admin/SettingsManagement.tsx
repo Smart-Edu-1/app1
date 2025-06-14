@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,13 @@ import { SubscriptionPlan } from '@/types';
 const SettingsManagement = () => {
   const { settings, updateSettings } = useAppData();
   const { toast } = useToast();
-  const [formData, setFormData] = useState(settings);
+  const [formData, setFormData] = useState(() => ({
+    ...settings,
+    contactMethods: settings.contactMethods || [],
+    subscriptionPlans: settings.subscriptionPlans || [],
+    themeColors: settings.themeColors || { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' },
+    adminCredentials: settings.adminCredentials || { username: '', password: '' }
+  }));
   const [showAdminUsername, setShowAdminUsername] = useState(false);
   const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
   const [credentialsForm, setCredentialsForm] = useState({
@@ -35,6 +41,17 @@ const SettingsManagement = () => {
     isActive: true,
     order: 1
   });
+
+  // Update formData when settings change
+  React.useEffect(() => {
+    setFormData(prev => ({
+      ...settings,
+      contactMethods: settings.contactMethods || [],
+      subscriptionPlans: settings.subscriptionPlans || [],
+      themeColors: settings.themeColors || { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' },
+      adminCredentials: settings.adminCredentials || { username: '', password: '' }
+    }));
+  }, [settings]);
 
   const handleSave = () => {
     updateSettings(formData);
@@ -467,7 +484,7 @@ const SettingsManagement = () => {
             <CardTitle>طرق التواصل</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {formData.contactMethods.map((method, index) => (
+            {(formData.contactMethods || []).map((method, index) => (
               <div key={index} className="flex items-center space-x-2">
                 <Input
                   value={method}
@@ -569,7 +586,7 @@ const SettingsManagement = () => {
                   </div>
                   <div>
                     <Label>المميزات</Label>
-                    {planForm.features.map((feature, index) => (
+                    {(planForm.features || []).map((feature, index) => (
                       <div key={index} className="flex items-center space-x-2 mt-2">
                         <Input
                           value={feature}
@@ -604,7 +621,7 @@ const SettingsManagement = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {formData.subscriptionPlans.map((plan) => (
+            {(formData.subscriptionPlans || []).map((plan) => (
               <Card key={plan.id} className="relative">
                 <CardHeader>
                   <CardTitle className="text-lg">{plan.name}</CardTitle>
@@ -618,7 +635,7 @@ const SettingsManagement = () => {
                 <CardContent>
                   <p className="text-sm text-gray-600 mb-4">{plan.description}</p>
                   <ul className="space-y-1">
-                    {plan.features.map((feature, index) => (
+                    {(plan.features || []).map((feature, index) => (
                       <li key={index} className="text-sm">• {feature}</li>
                     ))}
                   </ul>

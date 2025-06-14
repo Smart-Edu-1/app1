@@ -16,8 +16,8 @@ interface User {
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (fullName: string, username: string, email: string, password: string, activationCode: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<boolean>;
+  register: (fullName: string, username: string, password: string, activationCode: string) => Promise<boolean>;
   logout: () => void;
   enterAsGuest: () => void;
   isGuest: boolean;
@@ -90,34 +90,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isGuest = user?.id === 'guest';
   const isPremiumUser = user ? !isGuest && user.isActive && (!user.expiryDate || new Date(user.expiryDate) > new Date()) : false;
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      console.log('محاولة تسجيل الدخول...', email);
+      console.log('محاولة تسجيل الدخول...', username);
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      // البحث عن المستخدم في جدول profiles
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('username', username)
+        .eq('password', password)
+        .eq('is_active', true)
+        .single();
 
-      if (error) {
+      if (error || !profile) {
         console.error('خطأ في تسجيل الدخول:', error);
-        
-        let errorMessage = "حدث خطأ أثناء تسجيل الدخول";
-        
-        if (error.message.includes('Invalid login credentials')) {
-          errorMessage = "البريد الإلكتروني أو كلمة المرور غير صحيحة";
-        } else if (error.message.includes('Email not confirmed')) {
-          errorMessage = "يرجى تأكيد البريد الإلكتروني أولاً";
-        }
         
         toast({
           title: "خطأ في تسجيل الدخول",
-          description: errorMessage,
+          description: "اسم المستخدم أو كلمة المرور غير صحيحة",
           variant: "destructive"
         });
         return false;
       }
 
+      // إنشاء بيانات المستخدم
+      const userData: User = {
+        id: profile.id,
+        username: profile.username,
+        fullName: profile.full_name,
+        isAdmin: profile.is_admin,
+        isActive: profile.is_active,
+        expiryDate: profile.expiry_date,
+        createdAt: profile.created_at
+      };
+      
+      setUser(userData);
       console.log('تم تسجيل الدخول بنجاح');
       return true;
     } catch (error: any) {
@@ -131,7 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (fullName: string, username: string, email: string, password: string, activationCode: string): Promise<boolean> => {
+  const register = async (fullName: string, username: string, password: string, activationCode: string): Promise<boolean> => {
     try {
       console.log('محاولة التحقق من كود التفعيل:', activationCode);
       
@@ -172,79 +180,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const expiryDate = new Date();
       expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
-      // إنشاء المستخدم في Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: fullName,
-            username: username,
-            password: password
-          }
-        }
-      });
+      // إنشاء المستخدم في جدول profiles مباشرة
+      const { data: newProfile, error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          full_name: fullName,
+          username: username,
+          password: password,
+          is_active: true,
+          is_admin: false,
+          expiry_date: expiryDate.toISOString(),
+          activation_code: activationCode
+        })
+        .select()
+        .single();
 
-      if (authError) {
-        console.error('خطأ في إنشاء الحساب:', authError);
-        
-        let errorMessage = "حدث خطأ أثناء إنشاء الحساب";
-        
-        if (authError.message.includes('User already registered')) {
-          errorMessage = "البريد الإلكتروني مسجل بالفعل";
-        }
-        
+      if (profileError) {
+        console.error('خطأ في إنشاء الحساب:', profileError);
         toast({
           title: "خطأ في إنشاء الحساب",
-          description: errorMessage,
+          description: "حدث خطأ أثناء إنشاء الحساب",
           variant: "destructive"
         });
         return false;
       }
 
-      if (authData.user) {
-        // إنشاء profile للمستخدم
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            user_id: authData.user.id,
-            full_name: fullName,
-            username: username,
-            password: password, // في التطبيق الحقيقي، لا نحفظ كلمة المرور بهذا الشكل
-            is_active: true,
-            is_admin: false,
-            expiry_date: expiryDate.toISOString(),
-            activation_code: activationCode
-          });
+      // تحديث كود التفعيل كمستخدم
+      await supabase
+        .from('activation_codes')
+        .update({ is_used: true })
+        .eq('id', codeData.id);
 
-        if (profileError) {
-          console.error('خطأ في إنشاء ملف التعريف:', profileError);
-          toast({
-            title: "خطأ في إنشاء الحساب",
-            description: "حدث خطأ أثناء إنشاء ملف التعريف",
-            variant: "destructive"
-          });
-          return false;
-        }
+      // إنشاء بيانات المستخدم الجديد
+      const userData: User = {
+        id: newProfile.id,
+        username: newProfile.username,
+        fullName: newProfile.full_name,
+        isAdmin: newProfile.is_admin,
+        isActive: newProfile.is_active,
+        expiryDate: newProfile.expiry_date,
+        createdAt: newProfile.created_at
+      };
+      
+      setUser(userData);
+      
+      toast({
+        title: "تم إنشاء الحساب بنجاح",
+        description: `مرحباً ${fullName}`
+      });
 
-        // تحديث كود التفعيل كمستخدم
-        await supabase
-          .from('activation_codes')
-          .update({
-            is_used: true
-          })
-          .eq('id', codeData.id);
-
-        toast({
-          title: "تم إنشاء الحساب بنجاح",
-          description: "يرجى تأكيد البريد الإلكتروني إذا كان مطلوباً",
-        });
-
-        return true;
-      }
-
-      return false;
+      return true;
     } catch (error) {
       console.error('خطأ في إنشاء الحساب:', error);
       toast({

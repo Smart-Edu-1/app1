@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Trophy, FileText, Clock } from 'lucide-react';
+import { ArrowLeft, Trophy, FileText } from 'lucide-react';
 import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 
 const UnitQuizzesPage: React.FC = () => {
@@ -94,12 +94,6 @@ const UnitQuizzesPage: React.FC = () => {
                         <p className="text-muted-foreground mb-2">{quiz.description}</p>
                         <div className="flex items-center space-x-3">
                           <Badge variant="outline">اختبار تفاعلي</Badge>
-                          {quiz.time_limit && (
-                            <Badge variant="secondary" className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {quiz.time_limit} دقيقة
-                            </Badge>
-                          )}
                         </div>
                       </div>
                     </div>

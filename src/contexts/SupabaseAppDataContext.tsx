@@ -121,7 +121,6 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     ...quiz,
     lessonId: quiz.lesson_id,
     subjectId: quiz.subject_id,
-    timeLimit: quiz.time_limit,
     isActive: quiz.is_active,
     createdAt: quiz.created_at
   });
@@ -645,7 +644,6 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
           title: quiz.title,
           description: quiz.description,
           questions: quiz.questions || [],
-          time_limit: quiz.timeLimit,
           is_active: quiz.isActive
         })
         .select()
@@ -673,7 +671,6 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
           title: quiz.title,
           description: quiz.description,
           questions: quiz.questions || [],
-          time_limit: quiz.timeLimit,
           is_active: quiz.isActive
         })
         .eq('id', id);

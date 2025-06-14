@@ -32,9 +32,7 @@ const CodeManagement = () => {
     const code = newCode || generateRandomCode();
 
     await addCode({
-      code,
-      isUsed: false,
-      isActive: true
+      code
     });
 
     toast({

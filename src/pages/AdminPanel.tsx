@@ -19,7 +19,7 @@ import SettingsManagement from '@/components/admin/SettingsManagement';
 const AdminDashboard = () => {
   const { subjects, codes, units, lessons, quizzes } = useSupabaseAppData();
   
-  const activeCodes = codes.filter(code => !code.isUsed && code.isActive).length;
+  const activeCodes = codes.filter(code => !code.isUsed).length;
   
   const statsCards = [
     {

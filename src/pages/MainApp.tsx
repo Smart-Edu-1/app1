@@ -2,7 +2,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +16,7 @@ import LessonPage from './LessonPage';
 import QuizPage from './QuizPage';
 
 const HomePage = () => {
-  const { subjects } = useAppData();
+  const { subjects } = useSupabaseAppData();
   const { isGuest, isPremiumUser } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();

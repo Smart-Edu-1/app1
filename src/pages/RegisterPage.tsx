@@ -13,7 +13,6 @@ const RegisterPage = () => {
   const [formData, setFormData] = useState({
     fullName: '',
     username: '',
-    email: '',
     password: '',
     confirmPassword: '',
     activationCode: ''
@@ -62,7 +61,6 @@ const RegisterPage = () => {
       const success = await register(
         formData.fullName,
         formData.username,
-        formData.email,
         formData.password,
         formData.activationCode
       );
@@ -117,20 +115,6 @@ const RegisterPage = () => {
                 onChange={handleInputChange}
                 className="mt-1"
                 placeholder="أدخل اسم المستخدم"
-                required
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="email">البريد الإلكتروني</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="mt-1"
-                placeholder="أدخل البريد الإلكتروني"
                 required
               />
             </div>

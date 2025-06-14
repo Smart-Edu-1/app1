@@ -26,7 +26,11 @@ const AdminSettings: React.FC = () => {
       subscriptionPlans: appSettings.subscriptionPlans || [],
       themeColors: appSettings.themeColors || { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' },
       adminCredentials: appSettings.adminCredentials || { username: 'admin', password: 'admin123' },
-      supportContacts: appSettings.supportContacts || { whatsapp: '', telegram: '', phone: '' }
+      supportContacts: appSettings.supportContacts || { whatsapp: '', telegram: '', phone: '' },
+      contactPageTitle: appSettings.contactPageTitle || 'تواصل معنا',
+      contactPageDescription: appSettings.contactPageDescription || 'نحن هنا لمساعدتك في أي وقت',
+      workingHoursTitle: appSettings.workingHoursTitle || 'أوقات العمل',
+      workingHours: appSettings.workingHours || ['الأحد - الخميس: 9:00 صباحاً - 6:00 مساءً', 'الجمعة - السبت: 10:00 صباحاً - 4:00 مساءً']
     };
   });
   const { toast } = useToast();
@@ -44,7 +48,11 @@ const AdminSettings: React.FC = () => {
       subscriptionPlans: appSettings.subscriptionPlans || [],
       themeColors: appSettings.themeColors || { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' },
       adminCredentials: appSettings.adminCredentials || { username: 'admin', password: 'admin123' },
-      supportContacts: appSettings.supportContacts || { whatsapp: '', telegram: '', phone: '' }
+      supportContacts: appSettings.supportContacts || { whatsapp: '', telegram: '', phone: '' },
+      contactPageTitle: appSettings.contactPageTitle || 'تواصل معنا',
+      contactPageDescription: appSettings.contactPageDescription || 'نحن هنا لمساعدتك في أي وقت',
+      workingHoursTitle: appSettings.workingHoursTitle || 'أوقات العمل',
+      workingHours: appSettings.workingHours || ['الأحد - الخميس: 9:00 صباحاً - 6:00 مساءً', 'الجمعة - السبت: 10:00 صباحاً - 4:00 مساءً']
     };
     
     console.log('📝 البيانات الجديدة للنموذج:', newFormData);
@@ -173,6 +181,29 @@ const AdminSettings: React.FC = () => {
     setFormData(prev => ({
       ...prev,
       contactMethods: prev.contactMethods?.filter((_: string, i: number) => i !== index) || []
+    }));
+  };
+
+  const addWorkingHour = () => {
+    setFormData(prev => ({
+      ...prev,
+      workingHours: [...(prev.workingHours || []), '']
+    }));
+  };
+
+  const updateWorkingHour = (index: number, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      workingHours: prev.workingHours?.map((hour: string, i: number) => 
+        i === index ? value : hour
+      ) || []
+    }));
+  };
+
+  const deleteWorkingHour = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      workingHours: prev.workingHours?.filter((_: string, i: number) => i !== index) || []
     }));
   };
 
@@ -451,6 +482,86 @@ const AdminSettings: React.FC = () => {
                 لا توجد طرق تواصل. اضغط "إضافة طريقة تواصل" لإضافة طريقة جديدة.
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>إعدادات صفحة تواصل معنا</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="contactPageTitle" className="text-right">
+                عنوان الصفحة
+              </Label>
+              <Input
+                id="contactPageTitle"
+                value={formData.contactPageTitle}
+                onChange={(e) => handleInputChange('contactPageTitle', e.target.value)}
+                className="col-span-3"
+                placeholder="تواصل معنا"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="contactPageDescription" className="text-right pt-2">
+                وصف الصفحة
+              </Label>
+              <Textarea
+                id="contactPageDescription"
+                value={formData.contactPageDescription}
+                onChange={(e) => handleInputChange('contactPageDescription', e.target.value)}
+                className="col-span-3"
+                placeholder="نحن هنا لمساعدتك في أي وقت"
+                rows={2}
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="workingHoursTitle" className="text-right">
+                عنوان أوقات العمل
+              </Label>
+              <Input
+                id="workingHoursTitle"
+                value={formData.workingHoursTitle}
+                onChange={(e) => handleInputChange('workingHoursTitle', e.target.value)}
+                className="col-span-3"
+                placeholder="أوقات العمل"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label>أوقات العمل</Label>
+                <Button onClick={addWorkingHour} variant="outline" size="sm">
+                  <Settings className="ml-2 h-4 w-4" />
+                  إضافة وقت عمل
+                </Button>
+              </div>
+              {(formData.workingHours || []).map((hour: string, index: number) => (
+                <div key={index} className="flex items-center gap-2 mb-2">
+                  <Input
+                    value={hour}
+                    onChange={(e) => updateWorkingHour(index, e.target.value)}
+                    placeholder="مثال: الأحد - الخميس: 9:00 صباحاً - 6:00 مساءً"
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={() => deleteWorkingHour(index)}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    حذف
+                  </Button>
+                </div>
+              ))}
+              
+              {(!formData.workingHours || formData.workingHours.length === 0) && (
+                <div className="text-center text-gray-500 py-4">
+                  لا توجد أوقات عمل. اضغط "إضافة وقت عمل" لإضافة وقت جديد.
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 

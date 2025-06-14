@@ -275,6 +275,10 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
         contactMethods: settingsData.contact_methods || [],
         subscriptionPlans: settingsData.subscription_plans || [],
         supportContacts: settingsData.support_contacts || { whatsapp: '', telegram: '', phone: '' },
+        contactPageTitle: settingsData.contact_page_title || 'تواصل معنا',
+        contactPageDescription: settingsData.contact_page_description || 'نحن هنا لمساعدتك في أي وقت',
+        workingHoursTitle: settingsData.working_hours_title || 'أوقات العمل',
+        workingHours: settingsData.working_hours || ['الأحد - الخميس: 9:00 صباحاً - 6:00 مساءً', 'الجمعة - السبت: 10:00 صباحاً - 4:00 مساءً'],
         adminCredentials: {
           username: settingsData.admin_username,
           password: settingsData.admin_password
@@ -918,6 +922,10 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
             contact_methods: settings.contactMethods || [],
             subscription_plans: settings.subscriptionPlans || [],
             support_contacts: settings.supportContacts || { whatsapp: '', telegram: '', phone: '' },
+            contact_page_title: settings.contactPageTitle || 'تواصل معنا',
+            contact_page_description: settings.contactPageDescription || 'نحن هنا لمساعدتك في أي وقت',
+            working_hours_title: settings.workingHoursTitle || 'أوقات العمل',
+            working_hours: settings.workingHours || ['الأحد - الخميس: 9:00 صباحاً - 6:00 مساءً', 'الجمعة - السبت: 10:00 صباحاً - 4:00 مساءً'],
             admin_username: settings.adminCredentials?.username || 'admin',
             admin_password: settings.adminCredentials?.password || 'admin123'
           })
@@ -946,6 +954,10 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
             contact_methods: settings.contactMethods || [],
             subscription_plans: settings.subscriptionPlans || [],
             support_contacts: settings.supportContacts || { whatsapp: '', telegram: '', phone: '' },
+            contact_page_title: settings.contactPageTitle || 'تواصل معنا',
+            contact_page_description: settings.contactPageDescription || 'نحن هنا لمساعدتك في أي وقت',
+            working_hours_title: settings.workingHoursTitle || 'أوقات العمل',
+            working_hours: settings.workingHours || ['الأحد - الخميس: 9:00 صباحاً - 6:00 مساءً', 'الجمعة - السبت: 10:00 صباحاً - 4:00 مساءً'],
             admin_username: settings.adminCredentials?.username || 'admin',
             admin_password: settings.adminCredentials?.password || 'admin123'
           })

@@ -38,6 +38,8 @@ export type Database = {
           admin_username: string | null
           app_name: string
           contact_methods: Json | null
+          contact_page_description: string | null
+          contact_page_title: string | null
           created_at: string
           id: string
           monthly_price: number | null
@@ -47,6 +49,8 @@ export type Database = {
           subscription_plans: Json | null
           support_contacts: Json | null
           updated_at: string
+          working_hours: Json | null
+          working_hours_title: string | null
           yearly_price: number | null
         }
         Insert: {
@@ -56,6 +60,8 @@ export type Database = {
           admin_username?: string | null
           app_name?: string
           contact_methods?: Json | null
+          contact_page_description?: string | null
+          contact_page_title?: string | null
           created_at?: string
           id?: string
           monthly_price?: number | null
@@ -65,6 +71,8 @@ export type Database = {
           subscription_plans?: Json | null
           support_contacts?: Json | null
           updated_at?: string
+          working_hours?: Json | null
+          working_hours_title?: string | null
           yearly_price?: number | null
         }
         Update: {
@@ -74,6 +82,8 @@ export type Database = {
           admin_username?: string | null
           app_name?: string
           contact_methods?: Json | null
+          contact_page_description?: string | null
+          contact_page_title?: string | null
           created_at?: string
           id?: string
           monthly_price?: number | null
@@ -83,6 +93,8 @@ export type Database = {
           subscription_plans?: Json | null
           support_contacts?: Json | null
           updated_at?: string
+          working_hours?: Json | null
+          working_hours_title?: string | null
           yearly_price?: number | null
         }
         Relationships: []

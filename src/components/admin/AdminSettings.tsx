@@ -153,6 +153,29 @@ const AdminSettings: React.FC = () => {
     }));
   };
 
+  const addContactMethod = () => {
+    setFormData(prev => ({
+      ...prev,
+      contactMethods: [...(prev.contactMethods || []), '']
+    }));
+  };
+
+  const updateContactMethod = (index: number, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      contactMethods: prev.contactMethods?.map((method: string, i: number) => 
+        i === index ? value : method
+      ) || []
+    }));
+  };
+
+  const deleteContactMethod = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      contactMethods: prev.contactMethods?.filter((_: string, i: number) => i !== index) || []
+    }));
+  };
+
   const addPlanFeature = (planIndex: number) => {
     setFormData(prev => ({
       ...prev,
@@ -391,6 +414,43 @@ const AdminSettings: React.FC = () => {
                 placeholder="مثال: +963123456789"
               />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              طرق التواصل (صفحة تواصل معنا)
+              <Button onClick={addContactMethod} variant="outline" size="sm">
+                <Settings className="ml-2 h-4 w-4" />
+                إضافة طريقة تواصل
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {(formData.contactMethods || []).map((method: string, index: number) => (
+              <div key={index} className="flex items-center gap-2">
+                <Input
+                  value={method}
+                  onChange={(e) => updateContactMethod(index, e.target.value)}
+                  placeholder="مثال: واتساب: +963123456789"
+                  className="flex-1"
+                />
+                <Button
+                  onClick={() => deleteContactMethod(index)}
+                  variant="destructive"
+                  size="sm"
+                >
+                  حذف
+                </Button>
+              </div>
+            ))}
+            
+            {(!formData.contactMethods || formData.contactMethods.length === 0) && (
+              <div className="text-center text-gray-500 py-8">
+                لا توجد طرق تواصل. اضغط "إضافة طريقة تواصل" لإضافة طريقة جديدة.
+              </div>
+            )}
           </CardContent>
         </Card>
 

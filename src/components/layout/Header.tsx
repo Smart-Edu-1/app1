@@ -10,7 +10,8 @@ import NotificationsDropdown from './NotificationsDropdown';
 const Header: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const { notifications } = useSupabaseAppData();
+  // const { notifications } = useSupabaseAppData();
+  const notifications: any[] = []; // مؤقت حتى نضيف notifications لـ Supabase
   const { user } = useAuth();
 
   const unreadCount = notifications.filter(n => 

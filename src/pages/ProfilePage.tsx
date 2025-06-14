@@ -1,14 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { User, Eye, EyeOff, LogOut, ArrowLeft } from 'lucide-react';
+import { User, Eye, EyeOff, LogOut, ArrowLeft, Loader2 } from 'lucide-react';
 
 const ProfilePage: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isGuest } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Give some time for auth to load
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -19,11 +29,33 @@ const ProfilePage: React.FC = () => {
     navigate('/app');
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6 max-w-2xl">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-gray-500">جاري تحميل الملف الشخصي...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message if no user is logged in
   if (!user) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="text-center text-gray-500">
-          لا يمكن الوصول للملف الشخصي
+      <div className="container mx-auto p-6 max-w-2xl">
+        <div className="text-center min-h-[400px] flex items-center justify-center">
+          <div>
+            <User className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">غير مسجل دخول</h2>
+            <p className="text-gray-500 mb-4">يرجى تسجيل الدخول للوصول للملف الشخصي</p>
+            <Button onClick={() => navigate('/')}>
+              الذهاب لصفحة الدخول
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -72,11 +104,13 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
 
-            {user.id !== 'guest' && (
+            {!isGuest && (
               <>
                 <div className="flex flex-col space-y-2">
                   <span className="text-sm font-medium text-gray-600">تاريخ الانتهاء:</span>
-                  <span className="text-lg">{new Date(user.expiryDate).toLocaleDateString('en-GB')}</span>
+                  <span className="text-lg">
+                    {user.expiryDate ? new Date(user.expiryDate).toLocaleDateString('en-GB') : 'غير محدد'}
+                  </span>
                 </div>
 
                 <div className="flex flex-col space-y-2">
@@ -86,6 +120,14 @@ const ProfilePage: React.FC = () => {
                   </span>
                 </div>
               </>
+            )}
+
+            {isGuest && (
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  أنت تتصفح كضيف. بعض المميزات قد تكون محدودة.
+                </p>
+              </div>
             )}
           </div>
 

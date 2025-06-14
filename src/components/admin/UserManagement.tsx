@@ -9,11 +9,11 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Search, Edit, Trash2, Calendar } from 'lucide-react';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useToast } from '@/hooks/use-toast';
 
 const UserManagement = () => {
-  const { users, updateUser, deleteUser } = useAppData();
+  const { users, updateUser, deleteUser } = useSupabaseAppData();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [editingUser, setEditingUser] = useState<any>(null);

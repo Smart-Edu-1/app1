@@ -8,6 +8,7 @@ interface SupabaseAppDataContextType {
   lessons: any[];
   quizzes: any[];
   codes: any[];
+  users: any[];
   loading: boolean;
   
   // Functions for subjects
@@ -35,6 +36,10 @@ interface SupabaseAppDataContextType {
   updateCode: (id: string, code: any) => Promise<void>;
   deleteCode: (id: string) => Promise<void>;
   
+  // Functions for users
+  updateUser: (id: string, user: any) => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
+  
   // Helper functions
   getLessonsByUnit: (unitId: string) => any[];
   getQuizzesByUnit: (unitId: string) => any[];
@@ -52,6 +57,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
   const [lessons, setLessons] = useState<any[]>([]);
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [codes, setCodes] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const { toast } = useToast();
@@ -105,6 +111,17 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     ...code,
     isUsed: code.is_used,
     createdAt: code.created_at
+  });
+
+  const transformUser = (user: any) => ({
+    ...user,
+    fullName: user.full_name,
+    isActive: user.is_active,
+    isAdmin: user.is_admin,
+    expiryDate: user.expiry_date,
+    activationCode: user.activation_code,
+    createdAt: user.created_at,
+    userId: user.user_id
   });
 
   const loadData = async () => {
@@ -163,6 +180,14 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
 
       console.log('🔑 بيانات الأكواد:', codesData, 'خطأ:', codesError);
 
+      // Load users (profiles)
+      const { data: usersData, error: usersError } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      console.log('👥 بيانات المستخدمين:', usersData, 'خطأ:', usersError);
+
       if (subjectsError) {
         console.error('❌ خطأ في تحميل المواد:', subjectsError);
         throw subjectsError;
@@ -173,13 +198,15 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       const transformedLessons = (lessonsData || []).map(transformLesson);
       const transformedQuizzes = (quizzesData || []).map(transformQuiz);
       const transformedCodes = (codesData || []).map(transformCode);
+      const transformedUsers = (usersData || []).map(transformUser);
 
       console.log('✅ البيانات المحولة:', {
         subjects: transformedSubjects.length,
         units: transformedUnits.length,
         lessons: transformedLessons.length,
         quizzes: transformedQuizzes.length,
-        codes: transformedCodes.length
+        codes: transformedCodes.length,
+        users: transformedUsers.length
       });
 
       setSubjects(transformedSubjects);
@@ -187,6 +214,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       setLessons(transformedLessons);
       setQuizzes(transformedQuizzes);
       setCodes(transformedCodes);
+      setUsers(transformedUsers);
     } catch (error) {
       console.error('💥 خطأ في تحميل البيانات:', error);
       toast({
@@ -610,6 +638,49 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     }
   };
 
+  // User functions
+  const updateUser = async (id: string, user: any) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: user.fullName,
+          username: user.username,
+          password: user.password,
+          is_active: user.isActive,
+          expiry_date: user.expiryDate
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast({
+        title: "خطأ في تحديث المستخدم",
+        description: "حدث خطأ أثناء تحديث بيانات المستخدم",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteUser = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "خطأ في حذف المستخدم",
+        description: "حدث خطأ أثناء حذف المستخدم",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Helper functions
   const getLessonsByUnit = (unitId: string) => {
     return lessons.filter(lesson => lesson.unitId === unitId && lesson.isActive);
@@ -629,6 +700,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     lessons,
     quizzes,
     codes,
+    users,
     loading,
     addSubject,
     updateSubject,
@@ -645,6 +717,8 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     addCode,
     updateCode,
     deleteCode,
+    updateUser,
+    deleteUser,
     getLessonsByUnit,
     getQuizzesByUnit
   };

@@ -2,42 +2,61 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, Phone, Clock } from 'lucide-react';
+import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
+import { useAppSettings } from '@/contexts/AppSettingsContext';
 
 const DistributionCentersPage: React.FC = () => {
-  const distributionCenters = [
+  const { distributionCenters, loading } = useSupabaseAppData();
+  const { supportContacts } = useAppSettings();
+
+  // Default centers as fallback
+  const defaultCenters = [
     {
-      id: 1,
+      id: '1',
       name: 'مركز الرياض',
       address: 'شارع الملك فهد، الرياض',
       phone: '+966123456789',
       workingHours: 'السبت - الخميس: 8:00 ص - 6:00 م',
-      coordinates: { lat: 24.7136, lng: 46.6753 }
+      latitude: 24.7136,
+      longitude: 46.6753,
+      isActive: true
     },
     {
-      id: 2,
+      id: '2',
       name: 'مركز جدة',
       address: 'شارع التحلية، جدة',
       phone: '+966123456790',
       workingHours: 'السبت - الخميس: 9:00 ص - 7:00 م',
-      coordinates: { lat: 21.5433, lng: 39.1728 }
-    },
-    {
-      id: 3,
-      name: 'مركز الدمام',
-      address: 'شارع الملك سعود، الدمام',
-      phone: '+966123456791',
-      workingHours: 'السبت - الخميس: 8:30 ص - 5:30 م',
-      coordinates: { lat: 26.4282, lng: 50.0647 }
-    },
-    {
-      id: 4,
-      name: 'مركز المدينة المنورة',
-      address: 'شارع النور، المدينة المنورة',
-      phone: '+966123456792',
-      workingHours: 'السبت - الخميس: 8:00 ص - 6:00 م',
-      coordinates: { lat: 24.4686, lng: 39.6142 }
+      latitude: 21.5433,
+      longitude: 39.1728,
+      isActive: true
     }
   ];
+
+  const centersToShow = distributionCenters.length > 0 ? 
+    distributionCenters.filter(center => center.isActive) : 
+    defaultCenters;
+
+  const getSupportContactUrl = () => {
+    if (supportContacts?.whatsapp) {
+      return `https://wa.me/${supportContacts.whatsapp.replace(/[^\d]/g, '')}`;
+    }
+    if (supportContacts?.telegram) {
+      return `https://t.me/${supportContacts.telegram}`;
+    }
+    if (supportContacts?.phone) {
+      return `tel:${supportContacts.phone}`;
+    }
+    return 'https://wa.me/966123456789'; // Default fallback
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="text-center">⏳ جارٍ تحميل مراكز التوزيع...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6">
@@ -50,7 +69,7 @@ const DistributionCentersPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {distributionCenters.map((center) => (
+            {centersToShow.map((center) => (
               <Card key={center.id} className="border-2 hover:border-primary transition-colors">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center">
@@ -83,17 +102,19 @@ const DistributionCentersPage: React.FC = () => {
                       اتصل بالمركز
                     </Button>
                     
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => window.open(
-                        `https://maps.google.com/?q=${center.coordinates.lat},${center.coordinates.lng}`,
-                        '_blank'
-                      )}
-                    >
-                      <MapPin className="ml-2 h-4 w-4" />
-                      عرض على الخريطة
-                    </Button>
+                    {center.latitude && center.longitude && (
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => window.open(
+                          `https://maps.google.com/?q=${center.latitude},${center.longitude}`,
+                          '_blank'
+                        )}
+                      >
+                        <MapPin className="ml-2 h-4 w-4" />
+                        عرض على الخريطة
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -106,10 +127,10 @@ const DistributionCentersPage: React.FC = () => {
               للحصول على كود التفعيل وتفعيل حسابك، تواصل معنا عبر الواتساب
             </p>
             <Button 
-              onClick={() => window.open('https://wa.me/966123456789', '_blank')}
+              onClick={() => window.open(getSupportContactUrl(), '_blank')}
               className="bg-green-500 hover:bg-green-600 text-white"
             >
-              تواصل مع الدعم عبر الواتساب
+              تواصل مع الدعم
             </Button>
           </div>
         </CardContent>

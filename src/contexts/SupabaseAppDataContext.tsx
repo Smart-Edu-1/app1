@@ -10,6 +10,7 @@ interface SupabaseAppDataContextType {
   codes: any[];
   users: any[];
   notifications: any[];
+  distributionCenters: any[];
   appSettings: any;
   loading: boolean;
   
@@ -47,6 +48,11 @@ interface SupabaseAppDataContextType {
   markNotificationAsRead: (id: string) => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
   
+  // Functions for distribution centers
+  createDistributionCenter: (center: any) => Promise<void>;
+  updateDistributionCenter: (id: string, center: any) => Promise<void>;
+  deleteDistributionCenter: (id: string) => Promise<void>;
+  
   // Functions for app settings
   updateAppSettings: (settings: any) => Promise<void>;
   
@@ -69,6 +75,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
   const [codes, setCodes] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [distributionCenters, setDistributionCenters] = useState<any[]>([]);
   const [appSettings, setAppSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
   
@@ -143,6 +150,14 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     createdAt: notification.created_at
   });
 
+  const transformDistributionCenter = (center: any) => ({
+    ...center,
+    workingHours: center.working_hours,
+    orderIndex: center.order_index,
+    isActive: center.is_active,
+    createdAt: center.created_at
+  });
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -215,6 +230,14 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
 
       console.log('🔔 بيانات الإشعارات:', notificationsData, 'خطأ:', notificationsError);
 
+      // Load distribution centers
+      const { data: centersData, error: centersError } = await supabase
+        .from('distribution_centers')
+        .select('*')
+        .order('order_index', { ascending: true });
+
+      console.log('🏢 بيانات مراكز التوزيع:', centersData, 'خطأ:', centersError);
+
       // Load app settings
       const { data: settingsData, error: settingsError } = await supabase
         .from('app_settings')
@@ -235,6 +258,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       const transformedCodes = (codesData || []).map(transformCode);
       const transformedUsers = (usersData || []).map(transformUser);
       const transformedNotifications = (notificationsData || []).map(transformNotification);
+      const transformedCenters = (centersData || []).map(transformDistributionCenter);
       const transformedSettings = settingsData ? {
         appName: settingsData.app_name,
         aboutText: settingsData.about_text,
@@ -250,6 +274,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
         },
         contactMethods: settingsData.contact_methods || [],
         subscriptionPlans: settingsData.subscription_plans || [],
+        supportContacts: settingsData.support_contacts || { whatsapp: '', telegram: '', phone: '' },
         adminCredentials: {
           username: settingsData.admin_username,
           password: settingsData.admin_password
@@ -264,6 +289,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
         codes: transformedCodes.length,
         users: transformedUsers.length,
         notifications: transformedNotifications.length,
+        centers: transformedCenters.length,
         settings: transformedSettings
       });
 
@@ -274,6 +300,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       setCodes(transformedCodes);
       setUsers(transformedUsers);
       setNotifications(transformedNotifications);
+      setDistributionCenters(transformedCenters);
       setAppSettings(transformedSettings);
     } catch (error) {
       console.error('💥 خطأ في تحميل البيانات:', error);
@@ -351,6 +378,15 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       )
       .subscribe();
 
+    // Listen to distribution centers changes
+    const centersChannel = supabase
+      .channel('centers-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'distribution_centers' }, 
+        () => loadData()
+      )
+      .subscribe();
+
     // Listen to app settings changes
     const settingsChannel = supabase
       .channel('settings-changes')
@@ -368,6 +404,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       supabase.removeChannel(codesChannel);
       supabase.removeChannel(notificationsChannel);
       supabase.removeChannel(usersChannel);
+      supabase.removeChannel(centersChannel);
       supabase.removeChannel(settingsChannel);
     };
   };
@@ -880,6 +917,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
             accent_color: settings.themeColors?.accent || '#F59E0B',
             contact_methods: settings.contactMethods || [],
             subscription_plans: settings.subscriptionPlans || [],
+            support_contacts: settings.supportContacts || { whatsapp: '', telegram: '', phone: '' },
             admin_username: settings.adminCredentials?.username || 'admin',
             admin_password: settings.adminCredentials?.password || 'admin123'
           })
@@ -907,6 +945,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
             accent_color: settings.themeColors?.accent || '#F59E0B',
             contact_methods: settings.contactMethods || [],
             subscription_plans: settings.subscriptionPlans || [],
+            support_contacts: settings.supportContacts || { whatsapp: '', telegram: '', phone: '' },
             admin_username: settings.adminCredentials?.username || 'admin',
             admin_password: settings.adminCredentials?.password || 'admin123'
           })
@@ -936,6 +975,81 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     }
   };
 
+  // Distribution Center functions
+  const createDistributionCenter = async (center: any) => {
+    try {
+      const { data, error } = await supabase
+        .from('distribution_centers')
+        .insert({
+          name: center.name,
+          address: center.address,
+          phone: center.phone,
+          working_hours: center.working_hours,
+          latitude: center.latitude,
+          longitude: center.longitude,
+          is_active: center.is_active,
+          order_index: center.order_index
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      console.log('Distribution center added:', data);
+    } catch (error) {
+      console.error('Error adding distribution center:', error);
+      toast({
+        title: "خطأ في إضافة المركز",
+        description: "حدث خطأ أثناء إضافة مركز التوزيع",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateDistributionCenter = async (id: string, center: any) => {
+    try {
+      const { error } = await supabase
+        .from('distribution_centers')
+        .update({
+          name: center.name,
+          address: center.address,
+          phone: center.phone,
+          working_hours: center.working_hours,
+          latitude: center.latitude,
+          longitude: center.longitude,
+          is_active: center.is_active,
+          order_index: center.order_index
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating distribution center:', error);
+      toast({
+        title: "خطأ في تحديث المركز",
+        description: "حدث خطأ أثناء تحديث مركز التوزيع",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteDistributionCenter = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('distribution_centers')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting distribution center:', error);
+      toast({
+        title: "خطأ في حذف المركز",
+        description: "حدث خطأ أثناء حذف مركز التوزيع",
+        variant: "destructive"
+      });
+    }
+  };
+
   const value: SupabaseAppDataContextType = {
     subjects,
     units,
@@ -944,6 +1058,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     codes,
     users,
     notifications,
+    distributionCenters,
     appSettings,
     loading,
     addSubject,
@@ -966,6 +1081,9 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     addNotification,
     markNotificationAsRead,
     deleteNotification,
+    createDistributionCenter,
+    updateDistributionCenter,
+    deleteDistributionCenter,
     updateAppSettings,
     getLessonsByUnit,
     getQuizzesByUnit

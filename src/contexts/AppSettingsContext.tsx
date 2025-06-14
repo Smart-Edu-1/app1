@@ -16,6 +16,11 @@ interface AppSettingsContextType {
   };
   contactMethods: string[];
   subscriptionPlans: any[];
+  supportContacts: {
+    whatsapp: string;
+    telegram: string;
+    phone: string;
+  };
   adminCredentials: {
     username: string;
     password: string;
@@ -37,6 +42,11 @@ const AppSettingsContext = createContext<AppSettingsContextType>({
   },
   contactMethods: [],
   subscriptionPlans: [],
+  supportContacts: {
+    whatsapp: '',
+    telegram: '',
+    phone: ''
+  },
   adminCredentials: {
     username: 'admin',
     password: 'admin123'
@@ -91,6 +101,11 @@ export const AppSettingsProvider: React.FC<AppSettingsProviderProps> = ({ childr
     },
     contactMethods: appSettings.contactMethods || [],
     subscriptionPlans: appSettings.subscriptionPlans || [],
+    supportContacts: appSettings.supportContacts || {
+      whatsapp: '',
+      telegram: '',
+      phone: ''
+    },
     adminCredentials: appSettings.adminCredentials || {
       username: 'admin',
       password: 'admin123'

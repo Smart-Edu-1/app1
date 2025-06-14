@@ -45,6 +45,7 @@ export type Database = {
           quarterly_price: number | null
           secondary_color: string | null
           subscription_plans: Json | null
+          support_contacts: Json | null
           updated_at: string
           yearly_price: number | null
         }
@@ -62,6 +63,7 @@ export type Database = {
           quarterly_price?: number | null
           secondary_color?: string | null
           subscription_plans?: Json | null
+          support_contacts?: Json | null
           updated_at?: string
           yearly_price?: number | null
         }
@@ -79,8 +81,51 @@ export type Database = {
           quarterly_price?: number | null
           secondary_color?: string | null
           subscription_plans?: Json | null
+          support_contacts?: Json | null
           updated_at?: string
           yearly_price?: number | null
+        }
+        Relationships: []
+      }
+      distribution_centers: {
+        Row: {
+          address: string
+          created_at: string
+          id: string
+          is_active: boolean
+          latitude: number | null
+          longitude: number | null
+          name: string
+          order_index: number
+          phone: string
+          updated_at: string
+          working_hours: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          order_index?: number
+          phone: string
+          updated_at?: string
+          working_hours: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          order_index?: number
+          phone?: string
+          updated_at?: string
+          working_hours?: string
         }
         Relationships: []
       }

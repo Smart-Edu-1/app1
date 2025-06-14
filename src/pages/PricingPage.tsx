@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -56,7 +55,7 @@ const PricingPage: React.FC = () => {
     <div className="container mx-auto p-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-center text-2xl">أسعار الاشتراك</CardTitle>
+          <CardTitle className="text-center text-2xl">خطط الاشتراك</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center space-y-8">
@@ -91,7 +90,7 @@ const PricingPage: React.FC = () => {
                     <Button 
                       className={`w-full mt-6 ${index === 1 ? '' : 'variant-outline'}`}
                       variant={index === 1 ? 'default' : 'outline'}
-                      onClick={() => navigate('/distribution-centers')}
+                      onClick={() => navigate('/app/distribution-centers')}
                     >
                       اختيار الخطة
                     </Button>
@@ -103,10 +102,10 @@ const PricingPage: React.FC = () => {
             <div className="mt-8 p-4 bg-blue-50 rounded-lg text-center">
               <h3 className="font-semibold mb-4">يمكنك التواصل مع الدعم لطلب كود التفعيل</h3>
               <Button 
-                onClick={() => window.open('https://wa.me/1234567890', '_blank')}
+                onClick={() => navigate('/app/distribution-centers')}
                 className="bg-green-500 hover:bg-green-600"
               >
-                تواصل مع الدعم
+                عرض مراكز التوزيع
               </Button>
             </div>
           </div>

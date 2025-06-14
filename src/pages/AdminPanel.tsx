@@ -4,7 +4,7 @@ import { Routes, Route, useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen, Users, FileText, Star, Bell, Settings, LogOut, BarChart3, Layers, Play, HelpCircle } from 'lucide-react';
+import { BookOpen, Users, FileText, Star, Bell, Settings, LogOut, BarChart3, Layers, Play, HelpCircle, MapPin } from 'lucide-react';
 import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useToast } from '@/hooks/use-toast';
 import UserManagement from '@/components/admin/UserManagement';
@@ -15,9 +15,10 @@ import LessonManagement from '@/components/admin/LessonManagement';
 import QuizManagement from '@/components/admin/QuizManagement';
 import NotificationManagement from '@/components/admin/NotificationManagement';
 import AdminSettings from '@/components/admin/AdminSettings';
+import DistributionCenterManagement from '@/components/admin/DistributionCenterManagement';
 
 const AdminDashboard = () => {
-  const { subjects, codes, units, lessons, quizzes } = useSupabaseAppData();
+  const { subjects, codes, units, lessons, quizzes, distributionCenters } = useSupabaseAppData();
   
   const activeCodes = codes.filter(code => !code.isUsed).length;
   
@@ -57,6 +58,12 @@ const AdminDashboard = () => {
       value: codes.length,
       icon: <FileText className="h-6 w-6 text-blue-500" />,
       description: 'جميع أكواد التفعيل'
+    },
+    {
+      title: 'مراكز التوزيع',
+      value: distributionCenters.length,
+      icon: <MapPin className="h-6 w-6 text-red-500" />,
+      description: 'مراكز التوزيع النشطة'
     }
   ];
 
@@ -100,6 +107,7 @@ const AdminSidebar = () => {
     { path: '/admin/lessons', label: 'إدارة الدروس', icon: <Play className="h-5 w-5" /> },
     { path: '/admin/quizzes', label: 'إدارة الاختبارات', icon: <HelpCircle className="h-5 w-5" /> },
     { path: '/admin/codes', label: 'أكواد التفعيل', icon: <Star className="h-5 w-5" /> },
+    { path: '/admin/distribution-centers', label: 'مراكز التوزيع', icon: <MapPin className="h-5 w-5" /> },
     { path: '/admin/notifications', label: 'الإشعارات', icon: <Bell className="h-5 w-5" /> },
     { path: '/admin/settings', label: 'الإعدادات', icon: <Settings className="h-5 w-5" /> }
   ];
@@ -179,6 +187,7 @@ const AdminPanel: React.FC = () => {
           <Route path="/lessons" element={<LessonManagement />} />
           <Route path="/quizzes" element={<QuizManagement />} />
           <Route path="/codes" element={<CodeManagement />} />
+          <Route path="/distribution-centers" element={<DistributionCenterManagement />} />
           <Route path="/notifications" element={<NotificationManagement />} />
           <Route path="/settings" element={<AdminSettings />} />
         </Routes>

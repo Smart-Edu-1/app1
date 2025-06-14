@@ -18,14 +18,14 @@ const LessonManagement = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<any>(null);
   const [formData, setFormData] = useState({
-    title: '',
+    name: '',
     description: '',
-    unit_id: '',
-    video_url: '',
-    image_url: '',
-    is_free: false,
-    order_index: 1,
-    is_active: true
+    unitId: '',
+    videoUrl: '',
+    imageUrl: '',
+    isPremium: false,
+    order: 1,
+    isActive: true
   });
 
   const handleSubmit = () => {
@@ -46,28 +46,28 @@ const LessonManagement = () => {
     setIsDialogOpen(false);
     setEditingLesson(null);
     setFormData({ 
-      title: '', 
+      name: '', 
       description: '', 
-      unit_id: '', 
-      video_url: '', 
-      image_url: '', 
-      is_free: false, 
-      order_index: 1,
-      is_active: true 
+      unitId: '', 
+      videoUrl: '', 
+      imageUrl: '', 
+      isPremium: false, 
+      order: 1,
+      isActive: true 
     });
   };
 
   const handleEdit = (lesson: any) => {
     setEditingLesson(lesson);
     setFormData({
-      title: lesson.title || '',
+      name: lesson.name || '',
       description: lesson.description || '',
-      unit_id: lesson.unit_id || '',
-      video_url: lesson.video_url || '',
-      image_url: lesson.image_url || '',
-      is_free: lesson.is_free || false,
-      order_index: lesson.order_index || 1,
-      is_active: lesson.is_active
+      unitId: lesson.unitId || '',
+      videoUrl: lesson.videoUrl || '',
+      imageUrl: lesson.imageUrl || '',
+      isPremium: lesson.isPremium || false,
+      order: lesson.order || 1,
+      isActive: lesson.isActive
     });
     setIsDialogOpen(true);
   };
@@ -101,16 +101,16 @@ const LessonManagement = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="unit_id">الوحدة</Label>
+                <Label htmlFor="unitId">الوحدة</Label>
                 <select
-                  id="unit_id"
-                  value={formData.unit_id}
-                  onChange={(e) => setFormData({ ...formData, unit_id: e.target.value })}
+                  id="unitId"
+                  value={formData.unitId}
+                  onChange={(e) => setFormData({ ...formData, unitId: e.target.value })}
                   className="w-full p-2 border rounded-md"
                 >
                   <option value="">اختر الوحدة</option>
                   {units.map(unit => {
-                    const subject = subjects.find(s => s.id === unit.subject_id);
+                    const subject = subjects.find(s => s.id === unit.subjectId);
                     return (
                       <option key={unit.id} value={unit.id}>
                         {subject?.name} - {unit.name}
@@ -120,11 +120,11 @@ const LessonManagement = () => {
                 </select>
               </div>
               <div>
-                <Label htmlFor="title">اسم الدرس</Label>
+                <Label htmlFor="name">اسم الدرس</Label>
                 <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="مثال: مقدمة في الفيزياء"
                 />
               </div>
@@ -138,31 +138,31 @@ const LessonManagement = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="video_url">رابط الفيديو</Label>
+                <Label htmlFor="videoUrl">رابط الفيديو</Label>
                 <Input
-                  id="video_url"
-                  value={formData.video_url}
-                  onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                  id="videoUrl"
+                  value={formData.videoUrl}
+                  onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
                   placeholder="https://example.com/video.mp4"
                 />
               </div>
               <div>
-                <Label htmlFor="order_index">ترتيب الدرس</Label>
+                <Label htmlFor="order">ترتيب الدرس</Label>
                 <Input
-                  id="order_index"
+                  id="order"
                   type="number"
-                  value={formData.order_index}
-                  onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) })}
+                  value={formData.order}
+                  onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
                   min="1"
                 />
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
-                  id="is_free"
-                  checked={formData.is_free}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_free: checked })}
+                  id="isPremium"
+                  checked={!formData.isPremium}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isPremium: !checked })}
                 />
-                <Label htmlFor="is_free">درس مجاني</Label>
+                <Label htmlFor="isPremium">درس مجاني</Label>
               </div>
               <Button onClick={handleSubmit} className="w-full">
                 {editingLesson ? 'حفظ التغييرات' : 'إضافة الدرس'}
@@ -193,23 +193,23 @@ const LessonManagement = () => {
             </TableHeader>
             <TableBody>
               {lessons.map((lesson) => {
-                const unit = units.find(u => u.id === lesson.unit_id);
-                const subject = unit ? subjects.find(s => s.id === unit.subject_id) : null;
+                const unit = units.find(u => u.id === lesson.unitId);
+                const subject = unit ? subjects.find(s => s.id === unit.subjectId) : null;
                 return (
                   <TableRow key={lesson.id}>
-                    <TableCell className="font-medium">{lesson.title}</TableCell>
+                    <TableCell className="font-medium">{lesson.name}</TableCell>
                     <TableCell>
                       {subject?.name} - {unit?.name || 'غير محدد'}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={lesson.is_free ? "secondary" : "destructive"}>
-                        {lesson.is_free ? 'مجاني' : 'مدفوع'}
+                      <Badge variant={!lesson.isPremium ? "secondary" : "destructive"}>
+                        {!lesson.isPremium ? 'مجاني' : 'مدفوع'}
                       </Badge>
                     </TableCell>
-                    <TableCell>{lesson.order_index}</TableCell>
+                    <TableCell>{lesson.order}</TableCell>
                     <TableCell>
-                      <Badge variant={lesson.is_active ? "default" : "secondary"}>
-                        {lesson.is_active ? 'نشط' : 'معطل'}
+                      <Badge variant={lesson.isActive ? "default" : "secondary"}>
+                        {lesson.isActive ? 'نشط' : 'معطل'}
                       </Badge>
                     </TableCell>
                     <TableCell>

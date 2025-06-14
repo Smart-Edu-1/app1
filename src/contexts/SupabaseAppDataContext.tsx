@@ -82,11 +82,12 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
 
   const transformLesson = (lesson: any) => ({
     ...lesson,
+    name: lesson.title,
     unitId: lesson.unit_id,
     videoUrl: lesson.video_url,
     imageUrl: lesson.image_url,
     order: lesson.order_index,
-    isFree: lesson.is_free,
+    isPremium: !lesson.is_free,
     isActive: lesson.is_active,
     createdAt: lesson.created_at
   });
@@ -404,13 +405,13 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
         .from('lessons')
         .insert({
           unit_id: lesson.unitId,
-          title: lesson.title,
+          title: lesson.name,
           description: lesson.description,
           content: lesson.content,
           video_url: lesson.videoUrl,
           image_url: lesson.imageUrl,
           order_index: lesson.order,
-          is_free: lesson.isFree,
+          is_free: !lesson.isPremium,
           is_active: lesson.isActive
         })
         .select()
@@ -434,13 +435,13 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
         .from('lessons')
         .update({
           unit_id: lesson.unitId,
-          title: lesson.title,
+          title: lesson.name,
           description: lesson.description,
           content: lesson.content,
           video_url: lesson.videoUrl,
           image_url: lesson.imageUrl,
           order_index: lesson.order,
-          is_free: lesson.isFree,
+          is_free: !lesson.isPremium,
           is_active: lesson.isActive
         })
         .eq('id', id);

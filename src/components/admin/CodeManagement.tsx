@@ -33,7 +33,8 @@ const CodeManagement = () => {
 
     await addCode({
       code,
-      isUsed: false
+      isUsed: false,
+      isActive: true
     });
 
     toast({
@@ -143,7 +144,7 @@ const CodeManagement = () => {
                   <TableCell className="font-mono font-bold">{code.code}</TableCell>
                   <TableCell>
                     {code.createdAt ? 
-                      new Date(code.createdAt).toLocaleDateString('ar-SA') : '-'
+                      new Date(code.createdAt).toLocaleDateString('en-GB') : '-'
                     }
                   </TableCell>
                   <TableCell>

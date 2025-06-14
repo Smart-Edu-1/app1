@@ -32,7 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 lg:hidden">
+    <div className="fixed inset-0 z-50 md:hidden">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="fixed right-0 top-0 h-full w-80 bg-white shadow-lg">
         <div className="flex items-center justify-between p-4 border-b">
@@ -85,7 +85,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 <>
                   <div>
                     <span className="text-sm text-gray-600">تاريخ الانتهاء: </span>
-                    <span className="text-sm">{new Date(user.expiryDate).toLocaleDateString('ar-SA')}</span>
+                    <span className="text-sm">{new Date(user.expiryDate).toLocaleDateString('en-GB')}</span>
                   </div>
                   <div>
                     <span className="text-sm text-gray-600">حالة الحساب: </span>

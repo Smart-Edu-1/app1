@@ -1,136 +1,148 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-interface Subject {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  color: string;
-  image_url?: string;
-  order_index: number;
-  is_active: boolean;
-  created_at: string;
-}
-
-interface Unit {
-  id: string;
-  subject_id: string;
-  name: string;
-  description: string;
-  image_url?: string;
-  order_index: number;
-  is_active: boolean;
-  created_at: string;
-}
-
-interface Lesson {
-  id: string;
-  unit_id: string;
-  title: string;
-  description: string;
-  content?: string;
-  video_url?: string;
-  image_url?: string;
-  order_index: number;
-  is_free: boolean;
-  is_active: boolean;
-  created_at: string;
-}
-
-interface Quiz {
-  id: string;
-  lesson_id?: string;
-  subject_id?: string;
-  title: string;
-  description: string;
-  questions: any;
-  time_limit?: number;
-  is_active: boolean;
-  created_at: string;
-}
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: string;
-  is_read: boolean;
-  user_id?: string;
-  created_at: string;
-}
-
-interface AppDataContextType {
-  subjects: Subject[];
-  units: Unit[];
-  lessons: Lesson[];
-  quizzes: Quiz[];
-  notifications: Notification[];
+interface SupabaseAppDataContextType {
+  subjects: any[];
+  units: any[];
+  lessons: any[];
+  quizzes: any[];
+  codes: any[];
   loading: boolean;
   
-  // Subject methods
-  addSubject: (data: Omit<Subject, 'id' | 'created_at'>) => Promise<void>;
-  updateSubject: (id: string, data: Partial<Subject>) => Promise<void>;
+  // Functions for subjects
+  addSubject: (subject: any) => Promise<void>;
+  updateSubject: (id: string, subject: any) => Promise<void>;
   deleteSubject: (id: string) => Promise<void>;
   
-  // Unit methods
-  addUnit: (data: Omit<Unit, 'id' | 'created_at'>) => Promise<void>;
-  updateUnit: (id: string, data: Partial<Unit>) => Promise<void>;
+  // Functions for units
+  addUnit: (unit: any) => Promise<void>;
+  updateUnit: (id: string, unit: any) => Promise<void>;
   deleteUnit: (id: string) => Promise<void>;
   
-  // Lesson methods
-  addLesson: (data: Omit<Lesson, 'id' | 'created_at'>) => Promise<void>;
-  updateLesson: (id: string, data: Partial<Lesson>) => Promise<void>;
+  // Functions for lessons
+  addLesson: (lesson: any) => Promise<void>;
+  updateLesson: (id: string, lesson: any) => Promise<void>;
   deleteLesson: (id: string) => Promise<void>;
   
-  // Quiz methods
-  addQuiz: (data: Omit<Quiz, 'id' | 'created_at'>) => Promise<void>;
-  updateQuiz: (id: string, data: Partial<Quiz>) => Promise<void>;
+  // Functions for quizzes
+  addQuiz: (quiz: any) => Promise<void>;
+  updateQuiz: (id: string, quiz: any) => Promise<void>;
   deleteQuiz: (id: string) => Promise<void>;
   
-  // Notification methods
-  addNotification: (data: Omit<Notification, 'id' | 'created_at'>) => Promise<void>;
-  markNotificationAsRead: (id: string) => Promise<void>;
-  deleteNotification: (id: string) => Promise<void>;
+  // Functions for codes
+  addCode: (code: any) => Promise<void>;
+  updateCode: (id: string, code: any) => Promise<void>;
+  deleteCode: (id: string) => Promise<void>;
+  
+  // Helper functions
+  getLessonsByUnit: (unitId: string) => any[];
+  getQuizzesByUnit: (unitId: string) => any[];
 }
 
-const AppDataContext = createContext<AppDataContextType>({} as AppDataContextType);
+const SupabaseAppDataContext = createContext<SupabaseAppDataContextType | undefined>(undefined);
 
-export const useSupabaseAppData = () => useContext(AppDataContext);
+interface SupabaseAppDataProviderProps {
+  children: ReactNode;
+}
 
-export const SupabaseAppDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [units, setUnits] = useState<Unit[]>([]);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = ({ children }) => {
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [units, setUnits] = useState<any[]>([]);
+  const [lessons, setLessons] = useState<any[]>([]);
+  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [codes, setCodes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
   const { toast } = useToast();
 
   useEffect(() => {
-    loadAllData();
+    loadData();
+    setupRealtimeListeners();
   }, []);
 
-  const loadAllData = async () => {
-    try {
-      setLoading(true);
-      
-      // Load all data in parallel
-      const [subjectsData, unitsData, lessonsData, quizzesData, notificationsData] = await Promise.all([
-        supabase.from('subjects').select('*').order('order_index'),
-        supabase.from('units').select('*').order('order_index'),
-        supabase.from('lessons').select('*').order('order_index'),
-        supabase.from('quizzes').select('*').order('created_at', { ascending: false }),
-        supabase.from('notifications').select('*').order('created_at', { ascending: false })
-      ]);
+  // Transform Supabase snake_case to camelCase
+  const transformSubject = (subject: any) => ({
+    ...subject,
+    imageUrl: subject.image_url,
+    order: subject.order_index,
+    isActive: subject.is_active,
+    createdAt: subject.created_at
+  });
 
-      if (subjectsData.data) setSubjects(subjectsData.data);
-      if (unitsData.data) setUnits(unitsData.data);
-      if (lessonsData.data) setLessons(lessonsData.data);
-      if (quizzesData.data) setQuizzes(quizzesData.data);
-      if (notificationsData.data) setNotifications(notificationsData.data);
+  const transformUnit = (unit: any) => ({
+    ...unit,
+    subjectId: unit.subject_id,
+    imageUrl: unit.image_url,
+    order: unit.order_index,
+    isActive: unit.is_active,
+    createdAt: unit.created_at
+  });
+
+  const transformLesson = (lesson: any) => ({
+    ...lesson,
+    unitId: lesson.unit_id,
+    videoUrl: lesson.video_url,
+    imageUrl: lesson.image_url,
+    order: lesson.order_index,
+    isFree: lesson.is_free,
+    isActive: lesson.is_active,
+    createdAt: lesson.created_at
+  });
+
+  const transformQuiz = (quiz: any) => ({
+    ...quiz,
+    lessonId: quiz.lesson_id,
+    subjectId: quiz.subject_id,
+    timeLimit: quiz.time_limit,
+    isActive: quiz.is_active,
+    createdAt: quiz.created_at
+  });
+
+  const transformCode = (code: any) => ({
+    ...code,
+    isUsed: code.is_used,
+    createdAt: code.created_at
+  });
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      // Load subjects
+      const { data: subjectsData } = await supabase
+        .from('subjects')
+        .select('*')
+        .order('order_index', { ascending: true });
       
+      // Load units
+      const { data: unitsData } = await supabase
+        .from('units')
+        .select('*')
+        .order('order_index', { ascending: true });
+      
+      // Load lessons
+      const { data: lessonsData } = await supabase
+        .from('lessons')
+        .select('*')
+        .order('order_index', { ascending: true });
+      
+      // Load quizzes
+      const { data: quizzesData } = await supabase
+        .from('quizzes')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      // Load activation codes
+      const { data: codesData } = await supabase
+        .from('activation_codes')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      setSubjects((subjectsData || []).map(transformSubject));
+      setUnits((unitsData || []).map(transformUnit));
+      setLessons((lessonsData || []).map(transformLesson));
+      setQuizzes((quizzesData || []).map(transformQuiz));
+      setCodes((codesData || []).map(transformCode));
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
@@ -143,17 +155,80 @@ export const SupabaseAppDataProvider: React.FC<{ children: React.ReactNode }> = 
     }
   };
 
-  // Subject methods
-  const addSubject = async (data: Omit<Subject, 'id' | 'created_at'>) => {
+  const setupRealtimeListeners = () => {
+    // Listen to subjects changes
+    const subjectsChannel = supabase
+      .channel('subjects-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'subjects' }, 
+        () => loadData()
+      )
+      .subscribe();
+
+    // Listen to units changes
+    const unitsChannel = supabase
+      .channel('units-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'units' }, 
+        () => loadData()
+      )
+      .subscribe();
+
+    // Listen to lessons changes
+    const lessonsChannel = supabase
+      .channel('lessons-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'lessons' }, 
+        () => loadData()
+      )
+      .subscribe();
+
+    // Listen to quizzes changes
+    const quizzesChannel = supabase
+      .channel('quizzes-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'quizzes' }, 
+        () => loadData()
+      )
+      .subscribe();
+
+    // Listen to codes changes
+    const codesChannel = supabase
+      .channel('codes-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'activation_codes' }, 
+        () => loadData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subjectsChannel);
+      supabase.removeChannel(unitsChannel);
+      supabase.removeChannel(lessonsChannel);
+      supabase.removeChannel(quizzesChannel);
+      supabase.removeChannel(codesChannel);
+    };
+  };
+
+  // Subject functions
+  const addSubject = async (subject: any) => {
     try {
-      const { data: newSubject, error } = await supabase
+      const { data, error } = await supabase
         .from('subjects')
-        .insert(data)
+        .insert({
+          name: subject.name,
+          description: subject.description,
+          icon: subject.icon,
+          color: subject.color,
+          image_url: subject.imageUrl,
+          order_index: subject.order,
+          is_active: subject.isActive
+        })
         .select()
         .single();
 
       if (error) throw error;
-      if (newSubject) setSubjects(prev => [...prev, newSubject]);
+      console.log('Subject added:', data);
     } catch (error) {
       console.error('Error adding subject:', error);
       toast({
@@ -164,17 +239,22 @@ export const SupabaseAppDataProvider: React.FC<{ children: React.ReactNode }> = 
     }
   };
 
-  const updateSubject = async (id: string, data: Partial<Subject>) => {
+  const updateSubject = async (id: string, subject: any) => {
     try {
       const { error } = await supabase
         .from('subjects')
-        .update(data)
+        .update({
+          name: subject.name,
+          description: subject.description,
+          icon: subject.icon,
+          color: subject.color,
+          image_url: subject.imageUrl,
+          order_index: subject.order,
+          is_active: subject.isActive
+        })
         .eq('id', id);
 
       if (error) throw error;
-      setSubjects(prev => prev.map(subject => 
-        subject.id === id ? { ...subject, ...data } : subject
-      ));
     } catch (error) {
       console.error('Error updating subject:', error);
       toast({
@@ -193,7 +273,6 @@ export const SupabaseAppDataProvider: React.FC<{ children: React.ReactNode }> = 
         .eq('id', id);
 
       if (error) throw error;
-      setSubjects(prev => prev.filter(subject => subject.id !== id));
     } catch (error) {
       console.error('Error deleting subject:', error);
       toast({
@@ -204,17 +283,24 @@ export const SupabaseAppDataProvider: React.FC<{ children: React.ReactNode }> = 
     }
   };
 
-  // Unit methods
-  const addUnit = async (data: Omit<Unit, 'id' | 'created_at'>) => {
+  // Unit functions
+  const addUnit = async (unit: any) => {
     try {
-      const { data: newUnit, error } = await supabase
+      const { data, error } = await supabase
         .from('units')
-        .insert(data)
+        .insert({
+          subject_id: unit.subjectId,
+          name: unit.name,
+          description: unit.description,
+          image_url: unit.imageUrl,
+          order_index: unit.order,
+          is_active: unit.isActive
+        })
         .select()
         .single();
 
       if (error) throw error;
-      if (newUnit) setUnits(prev => [...prev, newUnit]);
+      console.log('Unit added:', data);
     } catch (error) {
       console.error('Error adding unit:', error);
       toast({
@@ -225,17 +311,21 @@ export const SupabaseAppDataProvider: React.FC<{ children: React.ReactNode }> = 
     }
   };
 
-  const updateUnit = async (id: string, data: Partial<Unit>) => {
+  const updateUnit = async (id: string, unit: any) => {
     try {
       const { error } = await supabase
         .from('units')
-        .update(data)
+        .update({
+          subject_id: unit.subjectId,
+          name: unit.name,
+          description: unit.description,
+          image_url: unit.imageUrl,
+          order_index: unit.order,
+          is_active: unit.isActive
+        })
         .eq('id', id);
 
       if (error) throw error;
-      setUnits(prev => prev.map(unit => 
-        unit.id === id ? { ...unit, ...data } : unit
-      ));
     } catch (error) {
       console.error('Error updating unit:', error);
       toast({
@@ -254,7 +344,6 @@ export const SupabaseAppDataProvider: React.FC<{ children: React.ReactNode }> = 
         .eq('id', id);
 
       if (error) throw error;
-      setUnits(prev => prev.filter(unit => unit.id !== id));
     } catch (error) {
       console.error('Error deleting unit:', error);
       toast({
@@ -265,17 +354,27 @@ export const SupabaseAppDataProvider: React.FC<{ children: React.ReactNode }> = 
     }
   };
 
-  // Lesson methods
-  const addLesson = async (data: Omit<Lesson, 'id' | 'created_at'>) => {
+  // Lesson functions
+  const addLesson = async (lesson: any) => {
     try {
-      const { data: newLesson, error } = await supabase
+      const { data, error } = await supabase
         .from('lessons')
-        .insert(data)
+        .insert({
+          unit_id: lesson.unitId,
+          title: lesson.title,
+          description: lesson.description,
+          content: lesson.content,
+          video_url: lesson.videoUrl,
+          image_url: lesson.imageUrl,
+          order_index: lesson.order,
+          is_free: lesson.isFree,
+          is_active: lesson.isActive
+        })
         .select()
         .single();
 
       if (error) throw error;
-      if (newLesson) setLessons(prev => [...prev, newLesson]);
+      console.log('Lesson added:', data);
     } catch (error) {
       console.error('Error adding lesson:', error);
       toast({
@@ -286,17 +385,24 @@ export const SupabaseAppDataProvider: React.FC<{ children: React.ReactNode }> = 
     }
   };
 
-  const updateLesson = async (id: string, data: Partial<Lesson>) => {
+  const updateLesson = async (id: string, lesson: any) => {
     try {
       const { error } = await supabase
         .from('lessons')
-        .update(data)
+        .update({
+          unit_id: lesson.unitId,
+          title: lesson.title,
+          description: lesson.description,
+          content: lesson.content,
+          video_url: lesson.videoUrl,
+          image_url: lesson.imageUrl,
+          order_index: lesson.order,
+          is_free: lesson.isFree,
+          is_active: lesson.isActive
+        })
         .eq('id', id);
 
       if (error) throw error;
-      setLessons(prev => prev.map(lesson => 
-        lesson.id === id ? { ...lesson, ...data } : lesson
-      ));
     } catch (error) {
       console.error('Error updating lesson:', error);
       toast({
@@ -315,7 +421,6 @@ export const SupabaseAppDataProvider: React.FC<{ children: React.ReactNode }> = 
         .eq('id', id);
 
       if (error) throw error;
-      setLessons(prev => prev.filter(lesson => lesson.id !== id));
     } catch (error) {
       console.error('Error deleting lesson:', error);
       toast({
@@ -326,17 +431,25 @@ export const SupabaseAppDataProvider: React.FC<{ children: React.ReactNode }> = 
     }
   };
 
-  // Quiz methods
-  const addQuiz = async (data: Omit<Quiz, 'id' | 'created_at'>) => {
+  // Quiz functions
+  const addQuiz = async (quiz: any) => {
     try {
-      const { data: newQuiz, error } = await supabase
+      const { data, error } = await supabase
         .from('quizzes')
-        .insert(data)
+        .insert({
+          lesson_id: quiz.lessonId,
+          subject_id: quiz.subjectId,
+          title: quiz.title,
+          description: quiz.description,
+          questions: quiz.questions || [],
+          time_limit: quiz.timeLimit,
+          is_active: quiz.isActive
+        })
         .select()
         .single();
 
       if (error) throw error;
-      if (newQuiz) setQuizzes(prev => [newQuiz, ...prev]);
+      console.log('Quiz added:', data);
     } catch (error) {
       console.error('Error adding quiz:', error);
       toast({
@@ -347,17 +460,22 @@ export const SupabaseAppDataProvider: React.FC<{ children: React.ReactNode }> = 
     }
   };
 
-  const updateQuiz = async (id: string, data: Partial<Quiz>) => {
+  const updateQuiz = async (id: string, quiz: any) => {
     try {
       const { error } = await supabase
         .from('quizzes')
-        .update(data)
+        .update({
+          lesson_id: quiz.lessonId,
+          subject_id: quiz.subjectId,
+          title: quiz.title,
+          description: quiz.description,
+          questions: quiz.questions || [],
+          time_limit: quiz.timeLimit,
+          is_active: quiz.isActive
+        })
         .eq('id', id);
 
       if (error) throw error;
-      setQuizzes(prev => prev.map(quiz => 
-        quiz.id === id ? { ...quiz, ...data } : quiz
-      ));
     } catch (error) {
       console.error('Error updating quiz:', error);
       toast({
@@ -376,7 +494,6 @@ export const SupabaseAppDataProvider: React.FC<{ children: React.ReactNode }> = 
         .eq('id', id);
 
       if (error) throw error;
-      setQuizzes(prev => prev.filter(quiz => quiz.id !== id));
     } catch (error) {
       console.error('Error deleting quiz:', error);
       toast({
@@ -387,87 +504,118 @@ export const SupabaseAppDataProvider: React.FC<{ children: React.ReactNode }> = 
     }
   };
 
-  // Notification methods
-  const addNotification = async (data: Omit<Notification, 'id' | 'created_at'>) => {
+  // Code functions
+  const addCode = async (code: any) => {
     try {
-      const { data: newNotification, error } = await supabase
-        .from('notifications')
-        .insert(data)
+      const { data, error } = await supabase
+        .from('activation_codes')
+        .insert({
+          code: code.code
+        })
         .select()
         .single();
 
       if (error) throw error;
-      if (newNotification) setNotifications(prev => [newNotification, ...prev]);
+      console.log('Code added:', data);
     } catch (error) {
-      console.error('Error adding notification:', error);
+      console.error('Error adding code:', error);
       toast({
-        title: "خطأ في إضافة الإشعار",
-        description: "حدث خطأ أثناء إضافة الإشعار",
+        title: "خطأ في إضافة الكود",
+        description: "حدث خطأ أثناء إضافة كود التفعيل",
         variant: "destructive"
       });
     }
   };
 
-  const markNotificationAsRead = async (id: string) => {
+  const updateCode = async (id: string, code: any) => {
     try {
       const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
+        .from('activation_codes')
+        .update({
+          code: code.code,
+          is_used: code.isUsed
+        })
         .eq('id', id);
 
       if (error) throw error;
-      setNotifications(prev => prev.map(notification => 
-        notification.id === id ? { ...notification, is_read: true } : notification
-      ));
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      console.error('Error updating code:', error);
+      toast({
+        title: "خطأ في تحديث الكود",
+        description: "حدث خطأ أثناء تحديث كود التفعيل",
+        variant: "destructive"
+      });
     }
   };
 
-  const deleteNotification = async (id: string) => {
+  const deleteCode = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('notifications')
+        .from('activation_codes')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
-      setNotifications(prev => prev.filter(notification => notification.id !== id));
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      console.error('Error deleting code:', error);
       toast({
-        title: "خطأ في حذف الإشعار",
-        description: "حدث خطأ أثناء حذف الإشعار",
+        title: "خطأ في حذف الكود",
+        description: "حدث خطأ أثناء حذف كود التفعيل",
         variant: "destructive"
       });
     }
   };
 
+  // Helper functions
+  const getLessonsByUnit = (unitId: string) => {
+    return lessons.filter(lesson => lesson.unitId === unitId && lesson.isActive);
+  };
+
+  const getQuizzesByUnit = (unitId: string) => {
+    return quizzes.filter(quiz => {
+      // Find lessons in this unit and get quizzes for those lessons
+      const unitLessons = lessons.filter(lesson => lesson.unitId === unitId);
+      return unitLessons.some(lesson => quiz.lessonId === lesson.id) && quiz.isActive;
+    });
+  };
+
+  const value: SupabaseAppDataContextType = {
+    subjects,
+    units,
+    lessons,
+    quizzes,
+    codes,
+    loading,
+    addSubject,
+    updateSubject,
+    deleteSubject,
+    addUnit,
+    updateUnit,
+    deleteUnit,
+    addLesson,
+    updateLesson,
+    deleteLesson,
+    addQuiz,
+    updateQuiz,
+    deleteQuiz,
+    addCode,
+    updateCode,
+    deleteCode,
+    getLessonsByUnit,
+    getQuizzesByUnit
+  };
+
   return (
-    <AppDataContext.Provider value={{
-      subjects,
-      units,
-      lessons,
-      quizzes,
-      notifications,
-      loading,
-      addSubject,
-      updateSubject,
-      deleteSubject,
-      addUnit,
-      updateUnit,
-      deleteUnit,
-      addLesson,
-      updateLesson,
-      deleteLesson,
-      addQuiz,
-      updateQuiz,
-      deleteQuiz,
-      addNotification,
-      markNotificationAsRead,
-      deleteNotification
-    }}>
+    <SupabaseAppDataContext.Provider value={value}>
       {children}
-    </AppDataContext.Provider>
+    </SupabaseAppDataContext.Provider>
   );
+};
+
+export const useSupabaseAppData = (): SupabaseAppDataContextType => {
+  const context = useContext(SupabaseAppDataContext);
+  if (context === undefined) {
+    throw new Error('useSupabaseAppData must be used within a SupabaseAppDataProvider');
+  }
+  return context;
 };

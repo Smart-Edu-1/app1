@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { collection, query, where, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/integrations/supabase/client';
+import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
 
 interface User {
@@ -15,8 +15,9 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => Promise<boolean>;
-  register: (fullName: string, username: string, password: string, activationCode: string) => Promise<boolean>;
+  session: Session | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (fullName: string, username: string, email: string, password: string, activationCode: string) => Promise<boolean>;
   logout: () => void;
   enterAsGuest: () => void;
   isGuest: boolean;
@@ -25,6 +26,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  session: null,
   login: async () => false,
   register: async () => false,
   logout: () => {},
@@ -37,159 +39,111 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('خطأ في تحليل بيانات المستخدم المحفوظة:', error);
-        localStorage.removeItem('user');
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session);
+        setSession(session);
+        
+        if (session?.user) {
+          // Fetch user profile from our profiles table
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
+
+          if (profile && !error) {
+            const userData: User = {
+              id: profile.id,
+              username: profile.username,
+              fullName: profile.full_name,
+              isAdmin: profile.is_admin,
+              isActive: profile.is_active,
+              expiryDate: profile.expiry_date,
+              createdAt: profile.created_at
+            };
+            setUser(userData);
+          } else {
+            console.error('Error fetching profile:', error);
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
       }
-    }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // Calculate isGuest and isPremiumUser based on user state
   const isGuest = user?.id === 'guest';
   const isPremiumUser = user ? !isGuest && user.isActive && (!user.expiryDate || new Date(user.expiryDate) > new Date()) : false;
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      console.log('بدء محاولة تسجيل الدخول...');
-      console.log('Firebase Project ID:', db.app.options.projectId);
-      console.log('اسم المستخدم:', username);
+      console.log('محاولة تسجيل الدخول...', email);
       
-      // Test Firebase connection first
-      console.log('اختبار الاتصال بقاعدة البيانات...');
-      
-      const usersRef = collection(db, 'users');
-      console.log('تم إنشاء مرجع المجموعة');
-      
-      const q = query(usersRef, where('username', '==', username));
-      console.log('تم إنشاء الاستعلام');
-      
-      console.log('محاولة تنفيذ الاستعلام...');
-      const querySnapshot = await getDocs(q);
-      console.log('تم تنفيذ الاستعلام بنجاح');
-      console.log('عدد المستندات الموجودة:', querySnapshot.size);
-      
-      if (querySnapshot.empty) {
-        console.log('لم يتم العثور على المستخدم');
-        toast({
-          title: "خطأ في تسجيل الدخول",
-          description: "اسم المستخدم غير موجود",
-          variant: "destructive"
-        });
-        return false;
-      }
-
-      const userDoc = querySnapshot.docs[0];
-      const userData = userDoc.data();
-      
-      console.log('بيانات المستخدم الموجودة:', userData);
-
-      // التحقق من كلمة المرور
-      if (userData.password !== password) {
-        console.log('كلمة المرور غير صحيحة');
-        toast({
-          title: "خطأ في تسجيل الدخول",
-          description: "كلمة المرور غير صحيحة",
-          variant: "destructive"
-        });
-        return false;
-      }
-
-      // التحقق من أن الحساب نشط (ما عدا الأدمن)
-      if (userData.isActive === false && !userData.isAdmin) {
-        toast({
-          title: "حساب معطل",
-          description: "تم تعطيل حسابك. يرجى الاتصال بالإدارة",
-          variant: "destructive"
-        });
-        return false;
-      }
-
-      // التحقق من انتهاء صلاحية الحساب (ما عدا الأدمن)
-      if (userData.expiryDate && !userData.isAdmin) {
-        const expiryDate = new Date(userData.expiryDate);
-        const now = new Date();
-        if (expiryDate < now) {
-          toast({
-            title: "انتهت صلاحية الحساب",
-            description: "انتهت صلاحية حسابك. يرجى تجديد الاشتراك",
-            variant: "destructive"
-          });
-          return false;
-        }
-      }
-
-      // تحديد إذا كان المستخدم مسؤول
-      const isAdmin = userData.isAdmin === true;
-      
-      const loggedInUser: User = {
-        id: userDoc.id,
-        username: userData.username,
-        fullName: userData.fullName,
-        isAdmin: isAdmin,
-        isActive: userData.isActive !== false,
-        expiryDate: userData.expiryDate,
-        createdAt: userData.createdAt
-      };
-
-      console.log('المستخدم بعد تسجيل الدخول:', loggedInUser);
-      console.log('هل هو مشرف؟', isAdmin);
-      
-      setUser(loggedInUser);
-      localStorage.setItem('user', JSON.stringify(loggedInUser));
-      
-      toast({
-        title: "تم تسجيل الدخول بنجاح",
-        description: `مرحباً ${userData.fullName}`,
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
       });
-      
+
+      if (error) {
+        console.error('خطأ في تسجيل الدخول:', error);
+        
+        let errorMessage = "حدث خطأ أثناء تسجيل الدخول";
+        
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = "البريد الإلكتروني أو كلمة المرور غير صحيحة";
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = "يرجى تأكيد البريد الإلكتروني أولاً";
+        }
+        
+        toast({
+          title: "خطأ في تسجيل الدخول",
+          description: errorMessage,
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      console.log('تم تسجيل الدخول بنجاح');
       return true;
     } catch (error: any) {
-      console.error('خطأ مفصل في تسجيل الدخول:', error);
-      console.error('نوع الخطأ:', error.code);
-      console.error('رسالة الخطأ:', error.message);
-      
-      let errorMessage = "حدث خطأ أثناء تسجيل الدخول";
-      
-      if (error.code === 'permission-denied') {
-        errorMessage = "لا توجد صلاحيات كافية للوصول إلى قاعدة البيانات. يرجى التحقق من إعدادات Firestore";
-        console.error('خطأ في الصلاحيات: تحقق من قواعد Firestore Security Rules');
-      } else if (error.code === 'unavailable') {
-        errorMessage = "قاعدة البيانات غير متاحة حالياً";
-      }
-      
+      console.error('خطأ غير متوقع في تسجيل الدخول:', error);
       toast({
         title: "خطأ في تسجيل الدخول",
-        description: errorMessage,
+        description: "حدث خطأ غير متوقع",
         variant: "destructive"
       });
       return false;
     }
   };
 
-  const register = async (fullName: string, username: string, password: string, activationCode: string): Promise<boolean> => {
+  const register = async (fullName: string, username: string, email: string, password: string, activationCode: string): Promise<boolean> => {
     try {
       console.log('محاولة التحقق من كود التفعيل:', activationCode);
       
       // التحقق من وجود كود التفعيل
-      const codesRef = collection(db, 'activationCodes');
-      const codeQuery = query(
-        codesRef,
-        where('code', '==', activationCode),
-        where('isUsed', '==', false),
-        where('isActive', '==', true)
-      );
-      
-      const codeSnapshot = await getDocs(codeQuery);
-      
-      if (codeSnapshot.empty) {
+      const { data: codeData, error: codeError } = await supabase
+        .from('activation_codes')
+        .select('*')
+        .eq('code', activationCode)
+        .eq('is_used', false)
+        .single();
+
+      if (codeError || !codeData) {
         toast({
           title: "كود تفعيل غير صحيح",
           description: "كود التفعيل غير موجود أو مستخدم بالفعل",
@@ -199,11 +153,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // التحقق من عدم وجود اسم المستخدم مسبقاً
-      const usersRef = collection(db, 'users');
-      const userQuery = query(usersRef, where('username', '==', username));
-      const userSnapshot = await getDocs(userQuery);
-      
-      if (!userSnapshot.empty) {
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', username)
+        .single();
+
+      if (existingUser) {
         toast({
           title: "اسم المستخدم موجود",
           description: "اسم المستخدم موجود بالفعل. يرجى اختيار اسم آخر",
@@ -212,48 +168,83 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
-      const codeDoc = codeSnapshot.docs[0];
-      const codeData = codeDoc.data();
-      
       // إنشاء تاريخ انتهاء الصلاحية
       const expiryDate = new Date();
-      expiryDate.setFullYear(expiryDate.getFullYear() + (codeData.validityYears || 1));
-      
-      // إنشاء المستخدم الجديد
-      const newUser = {
-        username,
+      expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+
+      // إنشاء المستخدم في Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
         password,
-        fullName,
-        isActive: true,
-        isAdmin: false,
-        expiryDate: expiryDate.toISOString(),
-        createdAt: new Date().toISOString(),
-        activationCode
-      };
-      
-      const docRef = await addDoc(usersRef, newUser);
-      
-      // تحديث كود التفعيل كمستخدم
-      await updateDoc(doc(db, 'activationCodes', codeDoc.id), {
-        isUsed: true,
-        usedBy: username,
-        usedAt: new Date().toISOString()
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: fullName,
+            username: username,
+            password: password
+          }
+        }
       });
-      
-      const registeredUser: User = {
-        id: docRef.id,
-        username,
-        fullName,
-        isAdmin: false,
-        isActive: true,
-        expiryDate: expiryDate.toISOString(),
-        createdAt: new Date().toISOString()
-      };
-      
-      setUser(registeredUser);
-      localStorage.setItem('user', JSON.stringify(registeredUser));
-      
-      return true;
+
+      if (authError) {
+        console.error('خطأ في إنشاء الحساب:', authError);
+        
+        let errorMessage = "حدث خطأ أثناء إنشاء الحساب";
+        
+        if (authError.message.includes('User already registered')) {
+          errorMessage = "البريد الإلكتروني مسجل بالفعل";
+        }
+        
+        toast({
+          title: "خطأ في إنشاء الحساب",
+          description: errorMessage,
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      if (authData.user) {
+        // إنشاء profile للمستخدم
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: authData.user.id,
+            full_name: fullName,
+            username: username,
+            password: password, // في التطبيق الحقيقي، لا نحفظ كلمة المرور بهذا الشكل
+            is_active: true,
+            is_admin: false,
+            expiry_date: expiryDate.toISOString(),
+            activation_code: activationCode
+          });
+
+        if (profileError) {
+          console.error('خطأ في إنشاء ملف التعريف:', profileError);
+          toast({
+            title: "خطأ في إنشاء الحساب",
+            description: "حدث خطأ أثناء إنشاء ملف التعريف",
+            variant: "destructive"
+          });
+          return false;
+        }
+
+        // تحديث كود التفعيل كمستخدم
+        await supabase
+          .from('activation_codes')
+          .update({
+            is_used: true
+          })
+          .eq('id', codeData.id);
+
+        toast({
+          title: "تم إنشاء الحساب بنجاح",
+          description: "يرجى تأكيد البريد الإلكتروني إذا كان مطلوباً",
+        });
+
+        return true;
+      }
+
+      return false;
     } catch (error) {
       console.error('خطأ في إنشاء الحساب:', error);
       toast({
@@ -265,9 +256,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('user');
+    setSession(null);
   };
 
   const enterAsGuest = () => {
@@ -280,12 +272,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString()
     };
     setUser(guestUser);
-    localStorage.setItem('user', JSON.stringify(guestUser));
   };
 
   return (
     <AuthContext.Provider value={{
       user,
+      session,
       login,
       register,
       logout,

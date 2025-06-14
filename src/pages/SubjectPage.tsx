@@ -4,19 +4,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, BookOpen, FileText, Lock } from 'lucide-react';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 const SubjectPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { subjects, units, getLessonsByUnit, getQuizzesByUnit } = useAppData();
+  const { subjects, units, lessons, quizzes } = useSupabaseAppData();
   const { isGuest, isPremiumUser } = useAuth();
   const { toast } = useToast();
 
   const subject = subjects.find(s => s.id === id);
-  const subjectUnits = units.filter(u => u.subjectId === id && u.isActive).sort((a, b) => a.order - b.order);
+  const subjectUnits = units.filter(u => u.subject_id === id && u.is_active).sort((a, b) => a.order_index - b.order_index);
 
   if (!subject) {
     return (
@@ -30,7 +30,7 @@ const SubjectPage: React.FC = () => {
   }
 
   const handleLessonClick = (lesson: any) => {
-    if (lesson.isPremium && (isGuest || !isPremiumUser)) {
+    if (!lesson.is_free && (isGuest || !isPremiumUser)) {
       toast({
         title: "محتوى مدفوع",
         description: "يجب تفعيل الحساب للوصول لهذا المحتوى",
@@ -42,14 +42,6 @@ const SubjectPage: React.FC = () => {
   };
 
   const handleQuizClick = (quiz: any) => {
-    if (quiz.isPremium && (isGuest || !isPremiumUser)) {
-      toast({
-        title: "محتوى مدفوع",
-        description: "يجب تفعيل الحساب للوصول لهذا المحتوى",
-        variant: "destructive"
-      });
-      return;
-    }
     navigate(`/app/quiz/${quiz.id}`);
   };
 
@@ -81,8 +73,8 @@ const SubjectPage: React.FC = () => {
 
       <div className="space-y-6">
         {subjectUnits.map((unit) => {
-          const unitLessons = getLessonsByUnit(unit.id);
-          const unitQuizzes = getQuizzesByUnit(unit.id);
+          const unitLessons = lessons.filter(l => l.unit_id === unit.id && l.is_active).sort((a, b) => a.order_index - b.order_index);
+          const unitQuizzes = quizzes.filter(q => q.subject_id === id && q.is_active);
           
           return (
             <Card key={unit.id}>
@@ -102,7 +94,7 @@ const SubjectPage: React.FC = () => {
                         <div
                           key={lesson.id}
                           className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                            lesson.isPremium && (isGuest || !isPremiumUser)
+                            !lesson.is_free && (isGuest || !isPremiumUser)
                               ? 'bg-gray-100 border-gray-300'
                               : 'hover:bg-blue-50 border-blue-200'
                           }`}
@@ -110,10 +102,10 @@ const SubjectPage: React.FC = () => {
                         >
                           <div className="flex items-center justify-between">
                             <div>
-                              <h4 className="font-medium">{lesson.name}</h4>
+                              <h4 className="font-medium">{lesson.title}</h4>
                               <p className="text-sm text-gray-600">{lesson.description}</p>
                             </div>
-                            {lesson.isPremium && (isGuest || !isPremiumUser) && (
+                            {!lesson.is_free && (isGuest || !isPremiumUser) && (
                               <Lock className="h-5 w-5 text-gray-400" />
                             )}
                           </div>
@@ -131,21 +123,14 @@ const SubjectPage: React.FC = () => {
                       {unitQuizzes.map((quiz) => (
                         <div
                           key={quiz.id}
-                          className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                            quiz.isPremium && (isGuest || !isPremiumUser)
-                              ? 'bg-gray-100 border-gray-300'
-                              : 'hover:bg-green-50 border-green-200'
-                          }`}
+                          className={`p-3 border rounded-lg cursor-pointer transition-colors hover:bg-green-50 border-green-200`}
                           onClick={() => handleQuizClick(quiz)}
                         >
                           <div className="flex items-center justify-between">
                             <div>
-                              <h4 className="font-medium">{quiz.name}</h4>
+                              <h4 className="font-medium">{quiz.title}</h4>
                               <p className="text-sm text-gray-600">{quiz.description}</p>
                             </div>
-                            {quiz.isPremium && (isGuest || !isPremiumUser) && (
-                              <Lock className="h-5 w-5 text-gray-400" />
-                            )}
                           </div>
                         </div>
                       ))}

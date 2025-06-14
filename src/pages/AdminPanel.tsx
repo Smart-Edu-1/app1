@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, Users, FileText, Star, Bell, Settings, LogOut, BarChart3, Layers, Play, HelpCircle } from 'lucide-react';
-import { useFirebaseAppData } from '@/contexts/FirebaseAppDataContext';
+import { useAppData } from '@/contexts/AppDataContext';
 import { useToast } from '@/hooks/use-toast';
 import UserManagement from '@/components/admin/UserManagement';
 import CodeManagement from '@/components/admin/CodeManagement';
@@ -17,7 +17,7 @@ import NotificationManagement from '@/components/admin/NotificationManagement';
 import SettingsManagement from '@/components/admin/SettingsManagement';
 
 const AdminDashboard = () => {
-  const { subjects, codes, units, lessons, quizzes } = useFirebaseAppData();
+  const { subjects, codes, units, lessons, quizzes } = useAppData();
   
   const activeCodes = codes.filter(code => !code.isUsed && code.isActive).length;
   

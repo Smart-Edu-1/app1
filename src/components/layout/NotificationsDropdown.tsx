@@ -48,7 +48,7 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({ isOpen, o
                       <h4 className="font-medium text-sm">{notification.title}</h4>
                       <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
                       <p className="text-xs text-gray-400 mt-2">
-                        {new Date(notification.createdAt).toLocaleDateString('ar-SA')}
+                        {new Date(notification.createdAt).toLocaleDateString('en-GB')}
                       </p>
                     </div>
                     {!notification.isRead && (

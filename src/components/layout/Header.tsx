@@ -4,14 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Bell, Menu } from 'lucide-react';
 import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import NotificationsDropdown from './NotificationsDropdown';
 
 const Header: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { notifications } = useSupabaseAppData();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const unreadCount = notifications.filter(n => 
     !n.isRead && (!n.userId || n.userId === user?.id)
@@ -35,7 +35,7 @@ const Header: React.FC = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setNotificationsOpen(!notificationsOpen)}
+              onClick={() => navigate('/app/notifications')}
             >
               <Bell className="h-6 w-6" />
               {unreadCount > 0 && (
@@ -44,11 +44,6 @@ const Header: React.FC = () => {
                 </span>
               )}
             </Button>
-            
-            <NotificationsDropdown
-              isOpen={notificationsOpen}
-              onClose={() => setNotificationsOpen(false)}
-            />
           </div>
         </div>
       </header>

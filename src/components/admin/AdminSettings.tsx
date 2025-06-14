@@ -25,7 +25,8 @@ const AdminSettings: React.FC = () => {
       contactMethods: appSettings.contactMethods || [],
       subscriptionPlans: appSettings.subscriptionPlans || [],
       themeColors: appSettings.themeColors || { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' },
-      adminCredentials: appSettings.adminCredentials || { username: 'admin', password: 'admin123' }
+      adminCredentials: appSettings.adminCredentials || { username: 'admin', password: 'admin123' },
+      supportContacts: appSettings.supportContacts || { whatsapp: '', telegram: '', phone: '' }
     };
   });
   const { toast } = useToast();
@@ -42,7 +43,8 @@ const AdminSettings: React.FC = () => {
       contactMethods: appSettings.contactMethods || [],
       subscriptionPlans: appSettings.subscriptionPlans || [],
       themeColors: appSettings.themeColors || { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' },
-      adminCredentials: appSettings.adminCredentials || { username: 'admin', password: 'admin123' }
+      adminCredentials: appSettings.adminCredentials || { username: 'admin', password: 'admin123' },
+      supportContacts: appSettings.supportContacts || { whatsapp: '', telegram: '', phone: '' }
     };
     
     console.log('📝 البيانات الجديدة للنموذج:', newFormData);
@@ -105,6 +107,16 @@ const AdminSettings: React.FC = () => {
       themeColors: {
         ...prev.themeColors,
         [colorType]: value
+      }
+    }));
+  };
+
+  const handleSupportContactChange = (contactType: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      supportContacts: {
+        ...prev.supportContacts,
+        [contactType]: value
       }
     }));
   };
@@ -332,6 +344,52 @@ const AdminSettings: React.FC = () => {
                   className="flex-1"
                 />
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>إعدادات التواصل والدعم</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="whatsappNumber" className="text-right">
+                رقم الواتساب
+              </Label>
+              <Input
+                id="whatsappNumber"
+                value={formData.supportContacts?.whatsapp || ''}
+                onChange={(e) => handleSupportContactChange('whatsapp', e.target.value)}
+                className="col-span-3"
+                placeholder="مثال: +963123456789"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="telegramNumber" className="text-right">
+                رقم التلجرام
+              </Label>
+              <Input
+                id="telegramNumber"
+                value={formData.supportContacts?.telegram || ''}
+                onChange={(e) => handleSupportContactChange('telegram', e.target.value)}
+                className="col-span-3"
+                placeholder="مثال: @username أو +963123456789"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="phoneNumber" className="text-right">
+                رقم الهاتف
+              </Label>
+              <Input
+                id="phoneNumber"
+                value={formData.supportContacts?.phone || ''}
+                onChange={(e) => handleSupportContactChange('phone', e.target.value)}
+                className="col-span-3"
+                placeholder="مثال: +963123456789"
+              />
             </div>
           </CardContent>
         </Card>

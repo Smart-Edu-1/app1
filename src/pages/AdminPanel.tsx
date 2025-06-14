@@ -14,7 +14,7 @@ import UnitManagement from '@/components/admin/UnitManagement';
 import LessonManagement from '@/components/admin/LessonManagement';
 import QuizManagement from '@/components/admin/QuizManagement';
 import NotificationManagement from '@/components/admin/NotificationManagement';
-import SettingsManagement from '@/components/admin/SettingsManagement';
+import AdminSettings from '@/components/admin/AdminSettings';
 
 const AdminDashboard = () => {
   const { subjects, codes, units, lessons, quizzes } = useSupabaseAppData();
@@ -180,7 +180,7 @@ const AdminPanel: React.FC = () => {
           <Route path="/quizzes" element={<QuizManagement />} />
           <Route path="/codes" element={<CodeManagement />} />
           <Route path="/notifications" element={<NotificationManagement />} />
-          <Route path="/settings" element={<SettingsManagement />} />
+          <Route path="/settings" element={<AdminSettings />} />
         </Routes>
       </div>
     </div>

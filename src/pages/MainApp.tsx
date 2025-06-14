@@ -15,6 +15,7 @@ import SubjectPage from './SubjectPage';
 import LessonPage from './LessonPage';
 import QuizPage from './QuizPage';
 import NotificationsPage from './NotificationsPage';
+import ProfilePage from './ProfilePage';
 
 const HomePage = () => {
   const { subjects, loading } = useSupabaseAppData();
@@ -98,6 +99,7 @@ const MainApp: React.FC = () => {
           <Route path="/lesson/:id" element={<LessonPage />} />
           <Route path="/quiz/:id" element={<QuizPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </main>
     </div>

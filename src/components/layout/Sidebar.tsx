@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
-import { Home, User, Info, MessageSquare, DollarSign, Menu, X, Eye, EyeOff } from 'lucide-react';
+import { Home, User, Info, MessageSquare, DollarSign, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
@@ -12,20 +12,12 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { loading } = useSupabaseAppData();
   const navigate = useNavigate();
-  const [showUserDetails, setShowUserDetails] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   const handleNavigation = (path: string) => {
     navigate(path);
-    onClose();
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
     onClose();
   };
 
@@ -55,48 +47,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <Button
             variant="ghost"
             className="w-full justify-start"
-            onClick={() => setShowUserDetails(!showUserDetails)}
+            onClick={() => handleNavigation('/app/profile')}
           >
             <User className="ml-2 h-5 w-5" />
             الملف الشخصي
           </Button>
-          
-          {showUserDetails && user && (
-            <div className="mr-7 p-3 bg-gray-50 rounded-lg space-y-2">
-              <div>
-                <span className="text-sm text-gray-600">الاسم: </span>
-                <span className="text-sm">{user.fullName}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm text-gray-600">اسم المستخدم: </span>
-                  <span className="text-sm">{showPassword ? user.username : '••••••••'}</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                </Button>
-              </div>
-              {user.id !== 'guest' && (
-                <>
-                  <div>
-                    <span className="text-sm text-gray-600">تاريخ الانتهاء: </span>
-                    <span className="text-sm">{new Date(user.expiryDate).toLocaleDateString('en-GB')}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-600">حالة الحساب: </span>
-                    <span className={`text-sm ${user.isActive ? 'text-green-600' : 'text-red-600'}`}>
-                      {user.isActive ? 'نشط' : 'معطل'}
-                    </span>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
           
           <Button
             variant="ghost"
@@ -125,15 +80,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             أسعار الاشتراك
           </Button>
           
-          <div className="pt-4 border-t">
-            <Button
-              variant="destructive"
-              className="w-full"
-              onClick={handleLogout}
-            >
-              تسجيل الخروج
-            </Button>
-          </div>
         </div>
       </div>
     </div>

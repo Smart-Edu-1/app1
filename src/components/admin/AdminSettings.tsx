@@ -47,8 +47,22 @@ const AdminSettings: React.FC = () => {
   }, [appSettings]);
 
   const handleSave = async () => {
+    console.log('🚀 تم الضغط على زر الحفظ!');
     console.log('📝 بدء عملية الحفظ من لوحة التحكم:', formData);
+    
+    // Check if formData has required fields
+    if (!formData.appName) {
+      console.error('❌ اسم التطبيق مفقود!');
+      toast({
+        title: "خطأ",
+        description: "اسم التطبيق مطلوب",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
+      console.log('🔄 استدعاء updateAppSettings...');
       await updateAppSettings(formData);
       console.log('✅ تم الحفظ بنجاح من لوحة التحكم');
       toast({

@@ -33,17 +33,20 @@ const AdminSettings: React.FC = () => {
   // Update formData when appSettings change
   useEffect(() => {
     console.log('🔄 تحديث البيانات في useEffect:', appSettings);
-    if (Object.keys(appSettings).length > 0) {
-      setFormData({
-        appName: appSettings.appName || 'منصة التعلم',
-        aboutText: appSettings.aboutText || 'منصة تعليمية شاملة تقدم أفضل المحتوى التعليمي',
-        subscriptionPrices: appSettings.subscriptionPrices || { monthly: 9.99, quarterly: 24.99, yearly: 89.99 },
-        contactMethods: appSettings.contactMethods || [],
-        subscriptionPlans: appSettings.subscriptionPlans || [],
-        themeColors: appSettings.themeColors || { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' },
-        adminCredentials: appSettings.adminCredentials || { username: 'admin', password: 'admin123' }
-      });
-    }
+    
+    // Always update formData when appSettings change, even if it's empty initially
+    const newFormData = {
+      appName: appSettings.appName || 'منصة التعلم',
+      aboutText: appSettings.aboutText || 'منصة تعليمية شاملة تقدم أفضل المحتوى التعليمي',
+      subscriptionPrices: appSettings.subscriptionPrices || { monthly: 9.99, quarterly: 24.99, yearly: 89.99 },
+      contactMethods: appSettings.contactMethods || [],
+      subscriptionPlans: appSettings.subscriptionPlans || [],
+      themeColors: appSettings.themeColors || { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' },
+      adminCredentials: appSettings.adminCredentials || { username: 'admin', password: 'admin123' }
+    };
+    
+    console.log('📝 البيانات الجديدة للنموذج:', newFormData);
+    setFormData(newFormData);
   }, [appSettings]);
 
   const handleSave = async () => {

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,117 +9,172 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2, FileText, HelpCircle } from 'lucide-react';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useToast } from '@/hooks/use-toast';
-import ImageUpload from '@/components/ui/image-upload';
+import { supabase } from '@/integrations/supabase/client';
 
 const QuizManagement = () => {
-  const { quizzes, questions, units, subjects, addQuiz, updateQuiz, deleteQuiz, addQuestion, deleteQuestion, getQuestionsByQuiz } = useAppData();
+  const { quizzes, units, subjects } = useSupabaseAppData();
   const { toast } = useToast();
   const [isQuizDialogOpen, setIsQuizDialogOpen] = useState(false);
   const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
   const [editingQuiz, setEditingQuiz] = useState<any>(null);
   const [selectedQuizId, setSelectedQuizId] = useState<string>('');
   const [quizFormData, setQuizFormData] = useState({
-    name: '',
+    title: '',
     description: '',
-    unitId: '',
-    imageUrl: '',
-    isPremium: false,
-    order: 1,
-    isActive: true
+    subject_id: '',
+    time_limit: 30,
+    is_active: true
   });
 
   const [questionFormData, setQuestionFormData] = useState({
     text: '',
-    type: 'multiple' as 'multiple' | 'boolean',
+    type: 'multiple_choice' as 'multiple_choice' | 'true_false',
     options: ['', '', '', ''],
-    correctAnswer: '',
-    imageUrl: '',
-    order: 1
+    correct_answer: '',
+    explanation: ''
   });
 
-  const handleQuizSubmit = () => {
-    if (editingQuiz) {
-      updateQuiz(editingQuiz.id, quizFormData);
-      toast({
-        title: "تم تحديث الاختبار",
-        description: "تم حفظ التغييرات بنجاح"
-      });
-    } else {
-      addQuiz(quizFormData);
-      toast({
-        title: "تم إضافة الاختبار",
-        description: "تم إنشاء الاختبار الجديد بنجاح"
-      });
-    }
-    
-    setIsQuizDialogOpen(false);
-    setEditingQuiz(null);
-    setQuizFormData({ 
-      name: '', 
-      description: '', 
-      unitId: '', 
-      imageUrl: '', 
-      isPremium: false, 
-      order: 1, 
-      isActive: true 
-    });
+  const refreshData = async () => {
+    // تحديث البيانات
+    window.location.reload();
   };
 
-  const handleQuestionSubmit = () => {
+  const handleQuizSubmit = async () => {
+    try {
+      if (editingQuiz) {
+        const { error } = await supabase
+          .from('quizzes')
+          .update(quizFormData)
+          .eq('id', editingQuiz.id);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "تم تحديث الاختبار",
+          description: "تم حفظ التغييرات بنجاح"
+        });
+      } else {
+        const { error } = await supabase
+          .from('quizzes')
+          .insert([quizFormData]);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "تم إضافة الاختبار",
+          description: "تم إنشاء الاختبار الجديد بنجاح"
+        });
+      }
+      
+      refreshData();
+      setIsQuizDialogOpen(false);
+      setEditingQuiz(null);
+      setQuizFormData({ 
+        title: '', 
+        description: '', 
+        subject_id: '', 
+        time_limit: 30,
+        is_active: true 
+      });
+    } catch (error) {
+      console.error('Error saving quiz:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء حفظ الاختبار",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleQuestionSubmit = async () => {
     if (!selectedQuizId) return;
     
-    addQuestion({
-      ...questionFormData,
-      quizId: selectedQuizId,
-      correctAnswer: questionFormData.type === 'boolean' 
-        ? questionFormData.correctAnswer 
-        : questionFormData.options.indexOf(questionFormData.correctAnswer)
-    });
-    
-    toast({
-      title: "تم إضافة السؤال",
-      description: "تم إضافة السؤال للاختبار بنجاح"
-    });
-    
-    setIsQuestionDialogOpen(false);
-    setQuestionFormData({
-      text: '',
-      type: 'multiple',
-      options: ['', '', '', ''],
-      correctAnswer: '',
-      imageUrl: '',
-      order: 1
-    });
+    try {
+      // إضافة السؤال إلى الاختبار المحدد
+      const quiz = quizzes.find(q => q.id === selectedQuizId);
+      if (!quiz) return;
+      
+      const currentQuestions = quiz.questions || [];
+      const newQuestion = {
+        id: Date.now().toString(),
+        text: questionFormData.text,
+        type: questionFormData.type,
+        options: questionFormData.options.filter(option => option.trim() !== ''),
+        correct_answer: questionFormData.correct_answer,
+        explanation: questionFormData.explanation
+      };
+      
+      const updatedQuestions = [...currentQuestions, newQuestion];
+      
+      const { error } = await supabase
+        .from('quizzes')
+        .update({ questions: updatedQuestions })
+        .eq('id', selectedQuizId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "تم إضافة السؤال",
+        description: "تم إضافة السؤال للاختبار بنجاح"
+      });
+      
+      refreshData();
+      setIsQuestionDialogOpen(false);
+      setQuestionFormData({
+        text: '',
+        type: 'multiple_choice',
+        options: ['', '', '', ''],
+        correct_answer: '',
+        explanation: ''
+      });
+    } catch (error) {
+      console.error('Error adding question:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إضافة السؤال",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleEditQuiz = (quiz: any) => {
     setEditingQuiz(quiz);
     setQuizFormData({
-      name: quiz.name,
+      title: quiz.title,
       description: quiz.description,
-      unitId: quiz.unitId,
-      imageUrl: quiz.imageUrl || '',
-      isPremium: quiz.isPremium,
-      order: quiz.order,
-      isActive: quiz.isActive
+      subject_id: quiz.subject_id || '',
+      time_limit: quiz.time_limit || 30,
+      is_active: quiz.is_active
     });
     setIsQuizDialogOpen(true);
   };
 
-  const handleDeleteQuiz = (quizId: string) => {
+  const handleDeleteQuiz = async (quizId: string) => {
     if (confirm('هل أنت متأكد من حذف هذا الاختبار؟ سيتم حذف جميع الأسئلة المرتبطة به.')) {
-      // حذف الأسئلة المرتبطة بالاختبار
-      const quizQuestions = getQuestionsByQuiz(quizId);
-      quizQuestions.forEach(question => deleteQuestion(question.id));
-      
-      // حذف الاختبار
-      deleteQuiz(quizId);
-      toast({
-        title: "تم حذف الاختبار",
-        description: "تم حذف الاختبار وجميع أسئلته بنجاح"
-      });
+      try {
+        const { error } = await supabase
+          .from('quizzes')
+          .delete()
+          .eq('id', quizId);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "تم حذف الاختبار",
+          description: "تم حذف الاختبار وجميع أسئلته بنجاح"
+        });
+        
+        refreshData();
+      } catch (error) {
+        console.error('Error deleting quiz:', error);
+        toast({
+          title: "خطأ",
+          description: "حدث خطأ أثناء حذف الاختبار",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -151,11 +205,10 @@ const QuizManagement = () => {
                   >
                     <option value="">اختر الاختبار</option>
                     {quizzes.map(quiz => {
-                      const unit = units.find(u => u.id === quiz.unitId);
-                      const subject = unit ? subjects.find(s => s.id === unit.subjectId) : null;
+                      const subject = subjects.find(s => s.id === quiz.subject_id);
                       return (
                         <option key={quiz.id} value={quiz.id}>
-                          {subject?.name} - {unit?.name} - {quiz.name}
+                          {subject?.name} - {quiz.title}
                         </option>
                       );
                     })}
@@ -175,15 +228,15 @@ const QuizManagement = () => {
                   <select
                     id="questionType"
                     value={questionFormData.type}
-                    onChange={(e) => setQuestionFormData({ ...questionFormData, type: e.target.value as 'multiple' | 'boolean' })}
+                    onChange={(e) => setQuestionFormData({ ...questionFormData, type: e.target.value as 'multiple_choice' | 'true_false' })}
                     className="w-full p-2 border rounded-md"
                   >
-                    <option value="multiple">اختيار من متعدد</option>
-                    <option value="boolean">صح أو خطأ</option>
+                    <option value="multiple_choice">اختيار من متعدد</option>
+                    <option value="true_false">صح أو خطأ</option>
                   </select>
                 </div>
                 
-                {questionFormData.type === 'multiple' ? (
+                {questionFormData.type === 'multiple_choice' ? (
                   <>
                     {questionFormData.options.map((option, index) => (
                       <div key={index}>
@@ -204,8 +257,8 @@ const QuizManagement = () => {
                       <Label htmlFor="correctAnswer">الإجابة الصحيحة</Label>
                       <select
                         id="correctAnswer"
-                        value={questionFormData.correctAnswer}
-                        onChange={(e) => setQuestionFormData({ ...questionFormData, correctAnswer: e.target.value })}
+                        value={questionFormData.correct_answer}
+                        onChange={(e) => setQuestionFormData({ ...questionFormData, correct_answer: e.target.value })}
                         className="w-full p-2 border rounded-md"
                       >
                         <option value="">اختر الإجابة الصحيحة</option>
@@ -220,8 +273,8 @@ const QuizManagement = () => {
                     <Label htmlFor="booleanAnswer">الإجابة الصحيحة</Label>
                     <select
                       id="booleanAnswer"
-                      value={questionFormData.correctAnswer}
-                      onChange={(e) => setQuestionFormData({ ...questionFormData, correctAnswer: e.target.value })}
+                      value={questionFormData.correct_answer}
+                      onChange={(e) => setQuestionFormData({ ...questionFormData, correct_answer: e.target.value })}
                       className="w-full p-2 border rounded-md"
                     >
                       <option value="">اختر الإجابة</option>
@@ -230,14 +283,6 @@ const QuizManagement = () => {
                     </select>
                   </div>
                 )}
-                
-                <ImageUpload
-                  currentImageUrl={questionFormData.imageUrl}
-                  onImageChange={(imageUrl) => setQuestionFormData({ ...questionFormData, imageUrl })}
-                  folder="questions"
-                  label="صورة السؤال (اختياري)"
-                  aspectRatio="600x375"
-                />
                 
                 <Button onClick={handleQuestionSubmit} className="w-full" disabled={!selectedQuizId}>
                   إضافة السؤال
@@ -261,30 +306,27 @@ const QuizManagement = () => {
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="unitId">الوحدة</Label>
+                  <Label htmlFor="subjectId">المادة</Label>
                   <select
-                    id="unitId"
-                    value={quizFormData.unitId}
-                    onChange={(e) => setQuizFormData({ ...quizFormData, unitId: e.target.value })}
+                    id="subjectId"
+                    value={quizFormData.subject_id}
+                    onChange={(e) => setQuizFormData({ ...quizFormData, subject_id: e.target.value })}
                     className="w-full p-2 border rounded-md"
                   >
-                    <option value="">اختر الوحدة</option>
-                    {units.map(unit => {
-                      const subject = subjects.find(s => s.id === unit.subjectId);
-                      return (
-                        <option key={unit.id} value={unit.id}>
-                          {subject?.name} - {unit.name}
-                        </option>
-                      );
-                    })}
+                    <option value="">اختر المادة</option>
+                    {subjects.map(subject => (
+                      <option key={subject.id} value={subject.id}>
+                        {subject.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <Label htmlFor="name">اسم الاختبار</Label>
+                  <Label htmlFor="title">اسم الاختبار</Label>
                   <Input
-                    id="name"
-                    value={quizFormData.name}
-                    onChange={(e) => setQuizFormData({ ...quizFormData, name: e.target.value })}
+                    id="title"
+                    value={quizFormData.title}
+                    onChange={(e) => setQuizFormData({ ...quizFormData, title: e.target.value })}
                     placeholder="مثال: اختبار الوحدة الأولى"
                   />
                 </div>
@@ -297,30 +339,24 @@ const QuizManagement = () => {
                     placeholder="وصف مختصر عن الاختبار"
                   />
                 </div>
-                <ImageUpload
-                  currentImageUrl={quizFormData.imageUrl}
-                  onImageChange={(imageUrl) => setQuizFormData({ ...quizFormData, imageUrl })}
-                  folder="quizzes"
-                  label="صورة غلاف الاختبار"
-                  aspectRatio="600x375"
-                />
                 <div>
-                  <Label htmlFor="order">ترتيب الاختبار</Label>
+                  <Label htmlFor="time_limit">المدة (بالدقائق)</Label>
                   <Input
-                    id="order"
+                    id="time_limit"
                     type="number"
-                    value={quizFormData.order}
-                    onChange={(e) => setQuizFormData({ ...quizFormData, order: parseInt(e.target.value) })}
+                    value={quizFormData.time_limit}
+                    onChange={(e) => setQuizFormData({ ...quizFormData, time_limit: parseInt(e.target.value) || 30 })}
                     min="1"
+                    placeholder="30"
                   />
                 </div>
                 <div className="flex items-center space-x-2">
                   <Switch
-                    id="isPremium"
-                    checked={quizFormData.isPremium}
-                    onCheckedChange={(checked) => setQuizFormData({ ...quizFormData, isPremium: checked })}
+                    id="is_active"
+                    checked={quizFormData.is_active}
+                    onCheckedChange={(checked) => setQuizFormData({ ...quizFormData, is_active: checked })}
                   />
-                  <Label htmlFor="isPremium">اختبار مدفوع</Label>
+                  <Label htmlFor="is_active">اختبار نشط</Label>
                 </div>
                 <Button onClick={handleQuizSubmit} className="w-full">
                   {editingQuiz ? 'حفظ التغييرات' : 'إضافة الاختبار'}
@@ -342,48 +378,27 @@ const QuizManagement = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>الصورة</TableHead>
                 <TableHead>اسم الاختبار</TableHead>
-                <TableHead>الوحدة</TableHead>
+                <TableHead>المادة</TableHead>
                 <TableHead>عدد الأسئلة</TableHead>
-                <TableHead>النوع</TableHead>
+                <TableHead>المدة</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>الإجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {quizzes.map((quiz) => {
-                const unit = units.find(u => u.id === quiz.unitId);
-                const subject = unit ? subjects.find(s => s.id === unit.subjectId) : null;
-                const questionCount = getQuestionsByQuiz(quiz.id).length;
+                const subject = subjects.find(s => s.id === quiz.subject_id);
+                const questionCount = quiz.questions ? quiz.questions.length : 0;
                 return (
                   <TableRow key={quiz.id}>
-                    <TableCell>
-                      {quiz.imageUrl ? (
-                        <img 
-                          src={quiz.imageUrl} 
-                          alt={quiz.name}
-                          className="w-12 h-8 object-cover rounded"
-                        />
-                      ) : (
-                        <div className="w-12 h-8 bg-gray-200 rounded flex items-center justify-center">
-                          <span className="text-xs text-gray-500">لا توجد</span>
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">{quiz.name}</TableCell>
-                    <TableCell>
-                      {subject?.name} - {unit?.name || 'غير محدد'}
-                    </TableCell>
+                    <TableCell className="font-medium">{quiz.title}</TableCell>
+                    <TableCell>{subject?.name || 'غير محدد'}</TableCell>
                     <TableCell>{questionCount}</TableCell>
+                    <TableCell>{quiz.time_limit} دقيقة</TableCell>
                     <TableCell>
-                      <Badge variant={quiz.isPremium ? "destructive" : "secondary"}>
-                        {quiz.isPremium ? 'مدفوع' : 'مجاني'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={quiz.isActive ? "default" : "secondary"}>
-                        {quiz.isActive ? 'نشط' : 'معطل'}
+                      <Badge variant={quiz.is_active ? "default" : "secondary"}>
+                        {quiz.is_active ? 'نشط' : 'معطل'}
                       </Badge>
                     </TableCell>
                     <TableCell>

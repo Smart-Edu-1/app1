@@ -125,6 +125,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createdAt: profile.created_at
       };
       
+      console.log('بيانات المستخدم المسجل:', userData);
+      console.log('هل المستخدم مشرف؟', userData.isAdmin);
+      
       setUser(userData);
       console.log('تم تسجيل الدخول بنجاح');
       return true;

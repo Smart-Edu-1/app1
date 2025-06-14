@@ -109,43 +109,74 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
   const loadData = async () => {
     setLoading(true);
     try {
+      console.log('🔄 بدء تحميل البيانات من Supabase...');
+      
       // Load subjects
-      const { data: subjectsData } = await supabase
+      const { data: subjectsData, error: subjectsError } = await supabase
         .from('subjects')
         .select('*')
         .order('order_index', { ascending: true });
       
+      console.log('📚 بيانات المواد:', subjectsData, 'خطأ:', subjectsError);
+      
       // Load units
-      const { data: unitsData } = await supabase
+      const { data: unitsData, error: unitsError } = await supabase
         .from('units')
         .select('*')
         .order('order_index', { ascending: true });
       
+      console.log('📂 بيانات الوحدات:', unitsData, 'خطأ:', unitsError);
+      
       // Load lessons
-      const { data: lessonsData } = await supabase
+      const { data: lessonsData, error: lessonsError } = await supabase
         .from('lessons')
         .select('*')
         .order('order_index', { ascending: true });
       
+      console.log('📖 بيانات الدروس:', lessonsData, 'خطأ:', lessonsError);
+      
       // Load quizzes
-      const { data: quizzesData } = await supabase
+      const { data: quizzesData, error: quizzesError } = await supabase
         .from('quizzes')
         .select('*')
         .order('created_at', { ascending: false });
       
+      console.log('🧪 بيانات الاختبارات:', quizzesData, 'خطأ:', quizzesError);
+      
       // Load activation codes
-      const { data: codesData } = await supabase
+      const { data: codesData, error: codesError } = await supabase
         .from('activation_codes')
         .select('*')
         .order('created_at', { ascending: false });
 
-      setSubjects((subjectsData || []).map(transformSubject));
-      setUnits((unitsData || []).map(transformUnit));
-      setLessons((lessonsData || []).map(transformLesson));
-      setQuizzes((quizzesData || []).map(transformQuiz));
-      setCodes((codesData || []).map(transformCode));
+      console.log('🔑 بيانات الأكواد:', codesData, 'خطأ:', codesError);
+
+      if (subjectsError) {
+        console.error('❌ خطأ في تحميل المواد:', subjectsError);
+        throw subjectsError;
+      }
+
+      const transformedSubjects = (subjectsData || []).map(transformSubject);
+      const transformedUnits = (unitsData || []).map(transformUnit);
+      const transformedLessons = (lessonsData || []).map(transformLesson);
+      const transformedQuizzes = (quizzesData || []).map(transformQuiz);
+      const transformedCodes = (codesData || []).map(transformCode);
+
+      console.log('✅ البيانات المحولة:', {
+        subjects: transformedSubjects.length,
+        units: transformedUnits.length,
+        lessons: transformedLessons.length,
+        quizzes: transformedQuizzes.length,
+        codes: transformedCodes.length
+      });
+
+      setSubjects(transformedSubjects);
+      setUnits(transformedUnits);
+      setLessons(transformedLessons);
+      setQuizzes(transformedQuizzes);
+      setCodes(transformedCodes);
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('💥 خطأ في تحميل البيانات:', error);
       toast({
         title: "خطأ في تحميل البيانات",
         description: "حدث خطأ أثناء تحميل البيانات",

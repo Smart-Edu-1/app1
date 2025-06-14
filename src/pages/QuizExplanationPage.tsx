@@ -10,7 +10,7 @@ const QuizExplanationPage: React.FC = () => {
   const location = useLocation();
   
   // Get explanation and question text from location state
-  const { explanation, questionText } = location.state || {};
+  const { explanation, questionText, questionImage } = location.state || {};
 
   const handleBackToQuiz = () => {
     navigate(`/app/quiz/${quizId}`);
@@ -52,6 +52,15 @@ const QuizExplanationPage: React.FC = () => {
               <h3 className="text-lg font-semibold mb-3 text-foreground">السؤال:</h3>
               <div className="p-4 bg-muted/50 rounded-lg">
                 <p className="text-foreground">{questionText}</p>
+                {questionImage && (
+                  <div className="mt-3">
+                    <img 
+                      src={questionImage} 
+                      alt="صورة السؤال" 
+                      className="max-w-full h-auto rounded-lg border"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 

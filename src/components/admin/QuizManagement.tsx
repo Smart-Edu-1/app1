@@ -12,6 +12,7 @@ import { Plus, Edit, Trash2, FileText, HelpCircle } from 'lucide-react';
 import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import ImageUpload from '@/components/ui/image-upload';
 
 const QuizManagement = () => {
   const { quizzes, units, subjects } = useSupabaseAppData();
@@ -33,7 +34,8 @@ const QuizManagement = () => {
     type: 'multiple_choice' as 'multiple_choice' | 'true_false',
     options: ['', ''], // Start with 2 options by default
     correct_answer: '',
-    explanation: ''
+    explanation: '',
+    image_url: ''
   });
 
   const refreshData = async () => {
@@ -103,7 +105,8 @@ const QuizManagement = () => {
         type: questionFormData.type,
         options: questionFormData.options.filter(option => option.trim() !== ''),
         correct_answer: questionFormData.correct_answer,
-        explanation: questionFormData.explanation
+        explanation: questionFormData.explanation,
+        image_url: questionFormData.image_url
       };
       
       const updatedQuestions = [...currentQuestions, newQuestion];
@@ -127,7 +130,8 @@ const QuizManagement = () => {
         type: 'multiple_choice',
         options: ['', ''], // Reset to 2 options
         correct_answer: '',
-        explanation: ''
+        explanation: '',
+        image_url: ''
       });
     } catch (error) {
       console.error('Error adding question:', error);
@@ -313,6 +317,17 @@ const QuizManagement = () => {
                     </select>
                   </div>
                 )}
+                
+                <div>
+                  <Label>صورة السؤال</Label>
+                  <ImageUpload
+                    currentImageUrl={questionFormData.image_url}
+                    onImageChange={(imageUrl) => setQuestionFormData({ ...questionFormData, image_url: imageUrl })}
+                    folder="quiz-questions"
+                    label=""
+                    aspectRatio="800x600"
+                  />
+                </div>
                 
                 <div>
                   <Label htmlFor="explanation">تفسير السؤال</Label>

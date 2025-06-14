@@ -10,8 +10,14 @@ const QuizPage: React.FC = () => {
   const navigate = useNavigate();
   const { quizzes, units, subjects } = useSupabaseAppData();
   
-  const [answers, setAnswers] = useState<{ [key: string]: string }>({});
-  const [checkedQuestions, setCheckedQuestions] = useState<{ [key: string]: boolean }>({});
+  const [answers, setAnswers] = useState<{ [key: string]: string }>(() => {
+    const saved = sessionStorage.getItem(`quiz-answers-${id}`);
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [checkedQuestions, setCheckedQuestions] = useState<{ [key: string]: boolean }>(() => {
+    const saved = sessionStorage.getItem(`quiz-checked-${id}`);
+    return saved ? JSON.parse(saved) : {};
+  });
   const [showResults, setShowResults] = useState(false);
 
   const quiz = quizzes.find(q => q.id === id);
@@ -50,11 +56,15 @@ const QuizPage: React.FC = () => {
   }
 
   const handleAnswerSelect = (questionId: string, answer: string) => {
-    setAnswers(prev => ({ ...prev, [questionId]: answer }));
+    const newAnswers = { ...answers, [questionId]: answer };
+    setAnswers(newAnswers);
+    sessionStorage.setItem(`quiz-answers-${id}`, JSON.stringify(newAnswers));
   };
 
   const handleCheckQuestion = (questionId: string) => {
-    setCheckedQuestions(prev => ({ ...prev, [questionId]: true }));
+    const newChecked = { ...checkedQuestions, [questionId]: true };
+    setCheckedQuestions(newChecked);
+    sessionStorage.setItem(`quiz-checked-${id}`, JSON.stringify(newChecked));
   };
 
   const handleCheckAllQuiz = () => {
@@ -63,6 +73,7 @@ const QuizPage: React.FC = () => {
       checkedAll[q.id] = true;
     });
     setCheckedQuestions(checkedAll);
+    sessionStorage.setItem(`quiz-checked-${id}`, JSON.stringify(checkedAll));
     setShowResults(true);
   };
 
@@ -78,7 +89,8 @@ const QuizPage: React.FC = () => {
     navigate(`/app/quiz/${quiz.id}/explanation/${question.id}`, {
       state: {
         explanation: question.explanation,
-        questionText: question.text
+        questionText: question.text,
+        questionImage: question.image_url
       }
     });
   };
@@ -132,6 +144,8 @@ const QuizPage: React.FC = () => {
                 setAnswers({});
                 setCheckedQuestions({});
                 setShowResults(false);
+                sessionStorage.removeItem(`quiz-answers-${id}`);
+                sessionStorage.removeItem(`quiz-checked-${id}`);
               }} 
               className="w-full max-w-md"
             >
@@ -189,6 +203,15 @@ const QuizPage: React.FC = () => {
                   <h3 className="text-lg font-semibold mb-4">
                     السؤال {index + 1}: {question.text}
                   </h3>
+                  {question.image_url && (
+                    <div className="mb-4">
+                      <img 
+                        src={question.image_url} 
+                        alt="صورة السؤال" 
+                        className="max-w-full h-auto rounded-lg border"
+                      />
+                    </div>
+                  )}
                   
                   <div className="space-y-3">
                     {question.type === 'multiple_choice' ? (

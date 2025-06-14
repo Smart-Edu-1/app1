@@ -8,12 +8,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, Send } from 'lucide-react';
+import { Plus, Send, Trash2 } from 'lucide-react';
 import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useToast } from '@/hooks/use-toast';
 
 const NotificationManagement = () => {
-  const { notifications, addNotification, users } = useSupabaseAppData();
+  const { notifications, addNotification, deleteNotification, users } = useSupabaseAppData();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -38,6 +38,16 @@ const NotificationManagement = () => {
 
     setIsDialogOpen(false);
     setFormData({ title: '', message: '', type: 'info', userId: '' });
+  };
+
+  const handleDeleteNotification = async (id: string) => {
+    if (confirm('هل أنت متأكد من حذف هذا الإشعار؟')) {
+      await deleteNotification(id);
+      toast({
+        title: "تم حذف الإشعار",
+        description: "تم حذف الإشعار بنجاح"
+      });
+    }
   };
 
   return (
@@ -128,6 +138,7 @@ const NotificationManagement = () => {
                 <TableHead>المستخدم</TableHead>
                 <TableHead>تاريخ الإرسال</TableHead>
                 <TableHead>الحالة</TableHead>
+                <TableHead>الإجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -154,6 +165,15 @@ const NotificationManagement = () => {
                     <Badge variant={notification.isRead ? "default" : "secondary"}>
                       {notification.isRead ? 'مقروء' : 'غير مقروء'}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button 
+                      onClick={() => handleDeleteNotification(notification.id)}
+                      variant="destructive" 
+                      size="sm"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

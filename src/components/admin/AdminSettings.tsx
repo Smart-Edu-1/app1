@@ -109,6 +109,76 @@ const AdminSettings: React.FC = () => {
     }));
   };
 
+  const addSubscriptionPlan = () => {
+    const newPlan = {
+      id: Date.now().toString(),
+      name: '',
+      description: '',
+      price: 0,
+      duration: 1,
+      features: [''],
+      isActive: true
+    };
+    setFormData(prev => ({
+      ...prev,
+      subscriptionPlans: [...(prev.subscriptionPlans || []), newPlan]
+    }));
+  };
+
+  const updateSubscriptionPlan = (index: number, field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      subscriptionPlans: prev.subscriptionPlans?.map((plan: any, i: number) => 
+        i === index ? { ...plan, [field]: value } : plan
+      ) || []
+    }));
+  };
+
+  const deleteSubscriptionPlan = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      subscriptionPlans: prev.subscriptionPlans?.filter((_: any, i: number) => i !== index) || []
+    }));
+  };
+
+  const addPlanFeature = (planIndex: number) => {
+    setFormData(prev => ({
+      ...prev,
+      subscriptionPlans: prev.subscriptionPlans?.map((plan: any, i: number) => 
+        i === planIndex ? { 
+          ...plan, 
+          features: [...(plan.features || []), ''] 
+        } : plan
+      ) || []
+    }));
+  };
+
+  const updatePlanFeature = (planIndex: number, featureIndex: number, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      subscriptionPlans: prev.subscriptionPlans?.map((plan: any, i: number) => 
+        i === planIndex ? { 
+          ...plan, 
+          features: plan.features?.map((feature: string, j: number) => 
+            j === featureIndex ? value : feature
+          ) || []
+        } : plan
+      ) || []
+    }));
+  };
+
+  const deletePlanFeature = (planIndex: number, featureIndex: number) => {
+    setFormData(prev => ({
+      ...prev,
+      subscriptionPlans: prev.subscriptionPlans?.map((plan: any, i: number) => 
+        i === planIndex ? { 
+          ...plan, 
+          features: plan.features?.filter((_: string, j: number) => j !== featureIndex) || []
+        } : plan
+      ) || []
+    }));
+  };
+
   return (
     <div>
       <header className="mb-8">
@@ -263,6 +333,111 @@ const AdminSettings: React.FC = () => {
                 />
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              خطط الاشتراك
+              <Button onClick={addSubscriptionPlan} variant="outline" size="sm">
+                <Settings className="ml-2 h-4 w-4" />
+                إضافة خطة
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {(formData.subscriptionPlans || []).map((plan: any, planIndex: number) => (
+              <Card key={planIndex} className="p-4 border border-gray-200">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">خطة الاشتراك {planIndex + 1}</h4>
+                    <Button 
+                      onClick={() => deleteSubscriptionPlan(planIndex)}
+                      variant="destructive" 
+                      size="sm"
+                    >
+                      حذف الخطة
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>اسم الخطة</Label>
+                      <Input
+                        value={plan.name || ''}
+                        onChange={(e) => updateSubscriptionPlan(planIndex, 'name', e.target.value)}
+                        placeholder="مثال: الخطة الأساسية"
+                      />
+                    </div>
+                    <div>
+                      <Label>السعر</Label>
+                      <Input
+                        type="number"
+                        value={plan.price || 0}
+                        onChange={(e) => updateSubscriptionPlan(planIndex, 'price', parseFloat(e.target.value) || 0)}
+                        placeholder="9.99"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>الوصف</Label>
+                    <Textarea
+                      value={plan.description || ''}
+                      onChange={(e) => updateSubscriptionPlan(planIndex, 'description', e.target.value)}
+                      placeholder="وصف الخطة"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>المدة (بالشهور)</Label>
+                    <Input
+                      type="number"
+                      value={plan.duration || 1}
+                      onChange={(e) => updateSubscriptionPlan(planIndex, 'duration', parseInt(e.target.value) || 1)}
+                      placeholder="1"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label>المميزات</Label>
+                      <Button 
+                        onClick={() => addPlanFeature(planIndex)}
+                        variant="outline" 
+                        size="sm"
+                      >
+                        إضافة ميزة
+                      </Button>
+                    </div>
+                    {(plan.features || []).map((feature: string, featureIndex: number) => (
+                      <div key={featureIndex} className="flex items-center gap-2 mb-2">
+                        <Input
+                          value={feature}
+                          onChange={(e) => updatePlanFeature(planIndex, featureIndex, e.target.value)}
+                          placeholder="ميزة الخطة"
+                        />
+                        <Button 
+                          onClick={() => deletePlanFeature(planIndex, featureIndex)}
+                          variant="destructive" 
+                          size="sm"
+                        >
+                          حذف
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            ))}
+            
+            {(!formData.subscriptionPlans || formData.subscriptionPlans.length === 0) && (
+              <div className="text-center text-gray-500 py-8">
+                لا توجد خطط اشتراك. اضغط "إضافة خطة" لإنشاء خطة جديدة.
+              </div>
+            )}
           </CardContent>
         </Card>
         

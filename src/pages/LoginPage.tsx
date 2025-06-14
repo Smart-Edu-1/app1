@@ -11,7 +11,7 @@ import { BookOpen, UserPlus, LogIn, Eye, EyeOff } from 'lucide-react';
 
 const LoginPage = () => {
   const [showLogin, setShowLogin] = useState(false);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -38,8 +38,8 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      console.log('محاولة تسجيل الدخول:', { email, password });
-      const success = await login(email, password);
+      console.log('محاولة تسجيل الدخول:', { username, password });
+      const success = await login(username, password);
       
       if (success) {
         toast({
@@ -82,14 +82,14 @@ const LoginPage = () => {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <Label htmlFor="email">البريد الإلكتروني</Label>
+                <Label htmlFor="username">اسم المستخدم</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   className="mt-1"
-                  placeholder="أدخل البريد الإلكتروني"
+                  placeholder="أدخل اسم المستخدم"
                   required
                 />
               </div>

@@ -2,9 +2,9 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Check } from 'lucide-react';
+import { Bell } from 'lucide-react';
 
 interface NotificationsDropdownProps {
   isOpen: boolean;
@@ -12,7 +12,7 @@ interface NotificationsDropdownProps {
 }
 
 const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({ isOpen, onClose }) => {
-  const { notifications, markNotificationAsRead } = useAppData();
+  const { notifications, markNotificationAsRead } = useSupabaseAppData();
   const { user } = useAuth();
 
   if (!isOpen) return null;
@@ -21,8 +21,8 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({ isOpen, o
     .filter(n => !n.userId || n.userId === user?.id)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const handleMarkAsRead = (id: string) => {
-    markNotificationAsRead(id);
+  const handleMarkAsRead = async (id: string) => {
+    await markNotificationAsRead(id);
   };
 
   return (
@@ -58,7 +58,7 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({ isOpen, o
                         className="h-6 w-6"
                         onClick={() => handleMarkAsRead(notification.id)}
                       >
-                        <Check className="h-3 w-3" />
+                        <Bell className="h-3 w-3" />
                       </Button>
                     )}
                   </div>

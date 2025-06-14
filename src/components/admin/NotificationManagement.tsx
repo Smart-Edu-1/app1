@@ -9,25 +9,26 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Plus, Send } from 'lucide-react';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useToast } from '@/hooks/use-toast';
 
 const NotificationManagement = () => {
-  const { notifications, addNotification, users } = useAppData();
+  const { notifications, addNotification, users } = useSupabaseAppData();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     message: '',
+    type: 'info',
     userId: '' // empty means send to all users
   });
 
-  const handleSendNotification = () => {
-    addNotification({
+  const handleSendNotification = async () => {
+    await addNotification({
       title: formData.title,
       message: formData.message,
-      isRead: false,
-      userId: formData.userId || undefined
+      type: formData.type,
+      userId: formData.userId || null
     });
 
     toast({
@@ -36,7 +37,7 @@ const NotificationManagement = () => {
     });
 
     setIsDialogOpen(false);
-    setFormData({ title: '', message: '', userId: '' });
+    setFormData({ title: '', message: '', type: 'info', userId: '' });
   };
 
   return (
@@ -75,6 +76,20 @@ const NotificationManagement = () => {
                 />
               </div>
               <div>
+                <Label htmlFor="type">نوع الإشعار</Label>
+                <select
+                  id="type"
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="info">معلومات</option>
+                  <option value="success">نجاح</option>
+                  <option value="warning">تحذير</option>
+                  <option value="error">خطأ</option>
+                </select>
+              </div>
+              <div>
                 <Label htmlFor="userId">المستخدم (اتركه فارغاً للإرسال للجميع)</Label>
                 <select
                   id="userId"
@@ -109,6 +124,7 @@ const NotificationManagement = () => {
               <TableRow>
                 <TableHead>العنوان</TableHead>
                 <TableHead>المحتوى</TableHead>
+                <TableHead>النوع</TableHead>
                 <TableHead>المستخدم</TableHead>
                 <TableHead>تاريخ الإرسال</TableHead>
                 <TableHead>الحالة</TableHead>
@@ -120,12 +136,20 @@ const NotificationManagement = () => {
                   <TableCell className="font-medium">{notification.title}</TableCell>
                   <TableCell className="max-w-xs truncate">{notification.message}</TableCell>
                   <TableCell>
+                    <Badge variant={
+                      notification.type === 'error' ? 'destructive' : 
+                      notification.type === 'warning' ? 'secondary' : 'default'
+                    }>
+                      {notification.type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     {notification.userId 
                       ? users.find(u => u.id === notification.userId)?.fullName || 'مستخدم محذوف'
                       : 'جميع المستخدمين'
                     }
                   </TableCell>
-                  <TableCell>{new Date(notification.createdAt).toLocaleDateString('ar-SA')}</TableCell>
+                  <TableCell>{new Date(notification.createdAt).toLocaleDateString('en-GB')}</TableCell>
                   <TableCell>
                     <Badge variant={notification.isRead ? "default" : "secondary"}>
                       {notification.isRead ? 'مقروء' : 'غير مقروء'}

@@ -9,6 +9,7 @@ interface SupabaseAppDataContextType {
   quizzes: any[];
   codes: any[];
   users: any[];
+  notifications: any[];
   loading: boolean;
   
   // Functions for subjects
@@ -40,6 +41,11 @@ interface SupabaseAppDataContextType {
   updateUser: (id: string, user: any) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
   
+  // Functions for notifications
+  addNotification: (notification: any) => Promise<void>;
+  markNotificationAsRead: (id: string) => Promise<void>;
+  deleteNotification: (id: string) => Promise<void>;
+  
   // Helper functions
   getLessonsByUnit: (unitId: string) => any[];
   getQuizzesByUnit: (unitId: string) => any[];
@@ -58,6 +64,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [codes, setCodes] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const { toast } = useToast();
@@ -124,6 +131,13 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     userId: user.user_id
   });
 
+  const transformNotification = (notification: any) => ({
+    ...notification,
+    isRead: notification.is_read,
+    userId: notification.user_id,
+    createdAt: notification.created_at
+  });
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -188,6 +202,14 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
 
       console.log('👥 بيانات المستخدمين:', usersData, 'خطأ:', usersError);
 
+      // Load notifications
+      const { data: notificationsData, error: notificationsError } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      console.log('🔔 بيانات الإشعارات:', notificationsData, 'خطأ:', notificationsError);
+
       if (subjectsError) {
         console.error('❌ خطأ في تحميل المواد:', subjectsError);
         throw subjectsError;
@@ -199,6 +221,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       const transformedQuizzes = (quizzesData || []).map(transformQuiz);
       const transformedCodes = (codesData || []).map(transformCode);
       const transformedUsers = (usersData || []).map(transformUser);
+      const transformedNotifications = (notificationsData || []).map(transformNotification);
 
       console.log('✅ البيانات المحولة:', {
         subjects: transformedSubjects.length,
@@ -206,7 +229,8 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
         lessons: transformedLessons.length,
         quizzes: transformedQuizzes.length,
         codes: transformedCodes.length,
-        users: transformedUsers.length
+        users: transformedUsers.length,
+        notifications: transformedNotifications.length
       });
 
       setSubjects(transformedSubjects);
@@ -215,6 +239,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       setQuizzes(transformedQuizzes);
       setCodes(transformedCodes);
       setUsers(transformedUsers);
+      setNotifications(transformedNotifications);
     } catch (error) {
       console.error('💥 خطأ في تحميل البيانات:', error);
       toast({
@@ -273,12 +298,32 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       )
       .subscribe();
 
+    // Listen to notifications changes
+    const notificationsChannel = supabase
+      .channel('notifications-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'notifications' }, 
+        () => loadData()
+      )
+      .subscribe();
+
+    // Listen to users/profiles changes
+    const usersChannel = supabase
+      .channel('users-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'profiles' }, 
+        () => loadData()
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(subjectsChannel);
       supabase.removeChannel(unitsChannel);
       supabase.removeChannel(lessonsChannel);
       supabase.removeChannel(quizzesChannel);
       supabase.removeChannel(codesChannel);
+      supabase.removeChannel(notificationsChannel);
+      supabase.removeChannel(usersChannel);
     };
   };
 
@@ -694,6 +739,68 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     });
   };
 
+  // Notification functions
+  const addNotification = async (notification: any) => {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .insert({
+          title: notification.title,
+          message: notification.message,
+          type: notification.type || 'info',
+          user_id: notification.userId
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      console.log('Notification added:', data);
+    } catch (error) {
+      console.error('Error adding notification:', error);
+      toast({
+        title: "خطأ في إضافة الإشعار",
+        description: "حدث خطأ أثناء إضافة الإشعار",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const markNotificationAsRead = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      toast({
+        title: "خطأ في تحديث الإشعار",
+        description: "حدث خطأ أثناء تحديث حالة الإشعار",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteNotification = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      toast({
+        title: "خطأ في حذف الإشعار",
+        description: "حدث خطأ أثناء حذف الإشعار",
+        variant: "destructive"
+      });
+    }
+  };
+
   const value: SupabaseAppDataContextType = {
     subjects,
     units,
@@ -701,6 +808,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     quizzes,
     codes,
     users,
+    notifications,
     loading,
     addSubject,
     updateSubject,
@@ -719,6 +827,9 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     deleteCode,
     updateUser,
     deleteUser,
+    addNotification,
+    markNotificationAsRead,
+    deleteNotification,
     getLessonsByUnit,
     getQuizzesByUnit
   };

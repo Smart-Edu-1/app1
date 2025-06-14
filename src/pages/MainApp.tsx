@@ -14,6 +14,8 @@ import ContactPage from './ContactPage';
 import PricingPage from './PricingPage';
 import DistributionCentersPage from './DistributionCentersPage';
 import SubjectPage from './SubjectPage';
+import UnitPage from './UnitPage';
+import UnitQuizzesPage from './UnitQuizzesPage';
 import LessonPage from './LessonPage';
 import QuizPage from './QuizPage';
 import NotificationsPage from './NotificationsPage';
@@ -57,7 +59,7 @@ const HomePage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {subjects.filter(s => s.isActive).sort((a, b) => a.order - b.order).map((subject) => (
+            {subjects.filter(s => s.is_active).sort((a, b) => a.order_index - b.order_index).map((subject) => (
               <Card 
                 key={subject.id}
                 className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
@@ -100,6 +102,8 @@ const MainApp: React.FC = () => {
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/distribution-centers" element={<DistributionCentersPage />} />
             <Route path="/subject/:id" element={<SubjectPage />} />
+            <Route path="/unit/:id" element={<UnitPage />} />
+            <Route path="/unit/:id/quizzes" element={<UnitQuizzesPage />} />
             <Route path="/lesson/:id" element={<LessonPage />} />
             <Route path="/quiz/:id" element={<QuizPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />

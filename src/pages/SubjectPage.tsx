@@ -82,8 +82,8 @@ const SubjectPage: React.FC = () => {
           </Card>
         </div>
 
-        {/* Units and Content */}
-        <div className="space-y-6">
+        {/* Units */}
+        <div className="space-y-4">
           {subjectUnits.length === 0 ? (
             <Card className="text-center p-12">
               <div className="text-muted-foreground">
@@ -93,127 +93,41 @@ const SubjectPage: React.FC = () => {
               </div>
             </Card>
           ) : (
-            subjectUnits.map((unit, index) => {
-              const unitLessons = lessons.filter(l => l.unit_id === unit.id && l.is_active).sort((a, b) => a.order_index - b.order_index);
-              const unitQuizzes = quizzes.filter(q => q.subject_id === id && q.is_active);
-              
-              return (
-                <Card key={unit.id} className="overflow-hidden">
-                  {/* Unit Header */}
-                  <CardHeader className="bg-muted/30">
+            <div className="grid gap-4">
+              {subjectUnits.map((unit) => {
+                const unitLessons = lessons.filter(l => l.unit_id === unit.id && l.is_active);
+                const unitQuizzes = quizzes.filter(q => q.subject_id === id && q.is_active);
+                
+                return (
+                  <Card 
+                    key={unit.id} 
+                    className="p-6 cursor-pointer transition-all hover:shadow-md hover:bg-muted/20"
+                    onClick={() => navigate(`/app/unit/${unit.id}`)}
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center ml-3">
-                          <BookOpen className="h-5 w-5 text-primary-foreground" />
+                        <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center ml-4">
+                          <BookOpen className="h-6 w-6 text-primary-foreground" />
                         </div>
                         <div>
-                          <CardTitle className="text-xl text-foreground">{unit.name}</CardTitle>
-                          <p className="text-muted-foreground text-sm">{unit.description}</p>
+                          <h3 className="text-xl font-semibold text-foreground mb-1">{unit.name}</h3>
+                          <p className="text-muted-foreground">{unit.description}</p>
+                          <div className="flex items-center mt-2 space-x-3">
+                            <Badge variant="outline">
+                              {unitLessons.length} درس
+                            </Badge>
+                            <Badge variant="outline">
+                              {unitQuizzes.length} اختبار
+                            </Badge>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex space-x-2">
-                        <Badge variant="outline">
-                          {unitLessons.length} درس
-                        </Badge>
-                        <Badge variant="outline">
-                          {unitQuizzes.length} اختبار
-                        </Badge>
-                      </div>
+                      <ArrowLeft className="h-5 w-5 text-muted-foreground" />
                     </div>
-                  </CardHeader>
-
-                  <CardContent className="p-6">
-                    {/* Lessons */}
-                    <div className="mb-8">
-                      <h3 className="font-semibold text-lg mb-4 text-foreground flex items-center">
-                        <Play className="ml-2 h-5 w-5" />
-                        الدروس
-                      </h3>
-                      
-                      {unitLessons.length === 0 ? (
-                        <div className="text-center py-6 text-muted-foreground">
-                          <p>لا توجد دروس متاحة</p>
-                        </div>
-                      ) : (
-                        <div className="grid gap-3">
-                          {unitLessons.map((lesson) => (
-                            <Card
-                              key={lesson.id}
-                              className={`p-4 cursor-pointer transition-all hover:shadow-md ${
-                                !lesson.is_free && (isGuest || !isPremiumUser)
-                                  ? 'bg-muted/50'
-                                  : 'hover:bg-muted/20'
-                              }`}
-                              onClick={() => handleLessonClick(lesson)}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                                    {!lesson.is_free && (isGuest || !isPremiumUser) ? (
-                                      <Lock className="h-4 w-4 text-primary-foreground" />
-                                    ) : (
-                                      <Play className="h-4 w-4 text-primary-foreground" />
-                                    )}
-                                  </div>
-                                  <div>
-                                    <h4 className="font-medium text-foreground">{lesson.title}</h4>
-                                    <p className="text-sm text-muted-foreground">{lesson.description}</p>
-                                    <Badge variant={lesson.is_free ? "default" : "secondary"} className="text-xs mt-1">
-                                      {lesson.is_free ? "مجاني" : "مدفوع"}
-                                    </Badge>
-                                  </div>
-                                </div>
-                                <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                            </Card>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Unit Quizzes */}
-                    <div>
-                      <h3 className="font-semibold text-lg mb-4 text-foreground flex items-center">
-                        <Trophy className="ml-2 h-5 w-5" />
-                        اختبارات الوحدة
-                      </h3>
-                      
-                      {unitQuizzes.length === 0 ? (
-                        <div className="text-center py-6 text-muted-foreground">
-                          <p>لا توجد اختبارات متاحة</p>
-                        </div>
-                      ) : (
-                        <div className="grid gap-3">
-                          {unitQuizzes.map((quiz) => (
-                            <Card
-                              key={quiz.id}
-                              className="p-4 cursor-pointer transition-all hover:shadow-md hover:bg-muted/20"
-                              onClick={() => handleQuizClick(quiz)}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                                    <FileText className="h-4 w-4 text-primary-foreground" />
-                                  </div>
-                                  <div>
-                                    <h4 className="font-medium text-foreground">{quiz.title}</h4>
-                                    <p className="text-sm text-muted-foreground">{quiz.description}</p>
-                                    <Badge variant="outline" className="text-xs mt-1">
-                                      اختبار تفاعلي
-                                    </Badge>
-                                  </div>
-                                </div>
-                                <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                            </Card>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
+                  </Card>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

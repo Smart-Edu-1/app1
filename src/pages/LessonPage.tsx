@@ -3,21 +3,23 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MessageSquare, Lock } from 'lucide-react';
-import { useAppData } from '@/contexts/AppDataContext';
+import { ArrowLeft, MessageSquare, Lock, Play } from 'lucide-react';
+import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import VideoProtection from '@/components/VideoProtection';
 import VideoPlayer from '@/components/VideoPlayer';
+import { useToast } from '@/hooks/use-toast';
 
 const LessonPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { lessons, units, subjects } = useAppData();
+  const { lessons, units, subjects } = useSupabaseAppData();
   const { user, isGuest, isPremiumUser } = useAuth();
+  const { toast } = useToast();
 
   const lesson = lessons.find(l => l.id === id);
-  const unit = lesson ? units.find(u => u.id === lesson.unitId) : null;
-  const subject = unit ? subjects.find(s => s.id === unit.subjectId) : null;
+  const unit = lesson ? units.find(u => u.id === lesson.unit_id) : null;
+  const subject = unit ? subjects.find(s => s.id === unit.subject_id) : null;
 
   if (!lesson || !unit || !subject) {
     return (
@@ -31,25 +33,25 @@ const LessonPage: React.FC = () => {
   }
 
   // Check if user can access premium content
-  const canAccessPremium = isPremiumUser || !lesson.isPremium;
+  const canAccessPremium = isPremiumUser || lesson.is_free;
 
-  if (isGuest && lesson.isPremium) {
+  if (!lesson.is_free && (isGuest || !isPremiumUser)) {
     return (
       <div className="container mx-auto p-6">
         <Button
           variant="ghost"
-          onClick={() => navigate(`/app/subject/${subject.id}`)}
+          onClick={() => navigate(`/app/unit/${unit.id}`)}
           className="mb-4"
         >
           <ArrowLeft className="ml-2 h-4 w-4" />
-          العودة لصفحة المادة
+          العودة للوحدة
         </Button>
 
         <Card className="text-center p-8">
           <CardContent>
-            <Lock className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <Lock className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-4">محتوى مدفوع</h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-muted-foreground mb-6">
               هذا الدرس متاح للمشتركين فقط. اشترك في التطبيق للوصول إلى جميع الدروس والمحتوى المدفوع.
             </p>
             <Button onClick={() => navigate('/register')} className="w-full max-w-sm">
@@ -61,62 +63,104 @@ const LessonPage: React.FC = () => {
     );
   }
 
+  const handleContactTeacher = () => {
+    toast({
+      title: "تواصل مع المدرس",
+      description: "يرجى التواصل مع المدرس عبر الواتساب أو البريد الإلكتروني المتاح في صفحة التواصل",
+    });
+    navigate('/app/contact');
+  };
+
   return (
     <VideoProtection>
-      <div className="container mx-auto p-6">
-        <Button
-          variant="ghost"
-          onClick={() => navigate(`/app/subject/${subject.id}`)}
-          className="mb-4"
-        >
-          <ArrowLeft className="ml-2 h-4 w-4" />
-          العودة لصفحة المادة
-        </Button>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto p-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(`/app/unit/${unit.id}`)}
+            className="mb-6"
+          >
+            <ArrowLeft className="ml-2 h-4 w-4" />
+            العودة للوحدة
+          </Button>
 
-        {/* Lesson Title and Description */}
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center mb-2">
-              <span className="text-sm text-gray-500">{subject.name} - {unit.name}</span>
-            </div>
-            <CardTitle className="text-2xl">{lesson.name}</CardTitle>
-            <p className="text-gray-600">{lesson.description}</p>
-          </CardHeader>
-        </Card>
-
-        {/* Video Player */}
-        <Card className="mb-6">
-          <CardContent className="p-0">
-            <div className="aspect-video">
-              {lesson.videoUrl && canAccessPremium ? (
-                <VideoPlayer
-                  src={lesson.videoUrl}
-                  title={lesson.name}
-                  onError={() => console.error('خطأ في تحميل الفيديو')}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500">
-                  <div className="text-center">
-                    <p className="text-xl mb-2">لا يوجد فيديو متاح حالياً</p>
-                    <p className="text-gray-400">سيتم إضافة الفيديو قريباً</p>
-                  </div>
+          {/* Lesson Header */}
+          <Card className="mb-6">
+            <CardHeader className="pb-4">
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center ml-3">
+                  <Play className="h-5 w-5 text-primary-foreground" />
                 </div>
+                <div className="text-sm text-muted-foreground">
+                  {subject.name} - {unit.name}
+                </div>
+              </div>
+              <CardTitle className="text-3xl font-bold text-foreground mb-3">
+                {lesson.title}
+              </CardTitle>
+              {lesson.description && (
+                <p className="text-muted-foreground text-lg leading-relaxed">
+                  {lesson.description}
+                </p>
               )}
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+          </Card>
 
-        {/* Teacher Contact */}
-        {lesson.teacherContact && canAccessPremium && (
+          {/* Video Player */}
+          <Card className="mb-6">
+            <CardContent className="p-0">
+              <div className="aspect-video">
+                {lesson.video_url && canAccessPremium ? (
+                  <VideoPlayer
+                    src={lesson.video_url}
+                    title={lesson.title}
+                    onError={() => console.error('خطأ في تحميل الفيديو')}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground">
+                    <div className="text-center">
+                      <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                      <p className="text-xl mb-2">لا يوجد فيديو متاح حالياً</p>
+                      <p className="text-muted-foreground">سيتم إضافة الفيديو قريباً</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Lesson Content */}
+          {lesson.content && canAccessPremium && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="text-xl">محتوى الدرس</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="prose prose-lg max-w-none text-foreground">
+                  <p className="leading-relaxed whitespace-pre-wrap">{lesson.content}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Teacher Contact */}
           <Card>
-            <CardContent className="p-4">
-              <Button className="w-full" variant="outline">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-4 text-foreground">تواصل مع المدرس</h3>
+              <p className="text-muted-foreground mb-4">
+                إذا كان لديك أي استفسارات حول هذا الدرس، يمكنك التواصل مع المدرس من خلال قنوات التواصل المتاحة.
+              </p>
+              <Button 
+                onClick={handleContactTeacher}
+                className="w-full"
+                variant="outline"
+              >
                 <MessageSquare className="ml-2 h-5 w-5" />
-                تواصل مع المدرس: {lesson.teacherContact}
+                تواصل مع المدرس
               </Button>
             </CardContent>
           </Card>
-        )}
+        </div>
       </div>
     </VideoProtection>
   );

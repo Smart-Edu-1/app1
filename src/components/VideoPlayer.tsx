@@ -14,9 +14,21 @@ const getYouTubeVideoId = (url: string): string | null => {
   return (match && match[2].length === 11) ? match[2] : null;
 };
 
+// Helper function to get Google Drive video ID and convert to embed URL
+const getGoogleDriveVideoId = (url: string): string | null => {
+  const regExp = /\/file\/d\/([a-zA-Z0-9_-]+)/;
+  const match = url.match(regExp);
+  return match ? match[1] : null;
+};
+
 // Helper function to check if URL is a YouTube URL
 const isYouTubeUrl = (url: string): boolean => {
   return url.includes('youtube.com') || url.includes('youtu.be');
+};
+
+// Helper function to check if URL is a Google Drive URL
+const isGoogleDriveUrl = (url: string): boolean => {
+  return url.includes('drive.google.com');
 };
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, title, onError }) => {
@@ -29,6 +41,27 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, title, onError }) => {
         <div className="relative w-full h-full bg-black rounded-lg overflow-hidden">
           <iframe
             src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
+            title={title}
+            className="w-full h-full"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            onError={onError}
+          />
+        </div>
+      );
+    }
+  }
+
+  // Check if it's a Google Drive URL
+  if (isGoogleDriveUrl(src)) {
+    const fileId = getGoogleDriveVideoId(src);
+    
+    if (fileId) {
+      return (
+        <div className="relative w-full h-full bg-black rounded-lg overflow-hidden">
+          <iframe
+            src={`https://drive.google.com/file/d/${fileId}/preview`}
             title={title}
             className="w-full h-full"
             frameBorder="0"

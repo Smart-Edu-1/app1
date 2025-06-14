@@ -4,12 +4,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 
 const QuizPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { quizzes, units, subjects, getQuestionsByQuiz } = useAppData();
+  const { quizzes, units, subjects } = useSupabaseAppData();
   
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<{ [key: string]: string | number }>({});
@@ -17,9 +17,9 @@ const QuizPage: React.FC = () => {
   const [score, setScore] = useState(0);
 
   const quiz = quizzes.find(q => q.id === id);
-  const unit = quiz ? units.find(u => u.id === quiz.unitId) : null;
-  const subject = unit ? subjects.find(s => s.id === unit.subjectId) : null;
-  const questions = quiz ? getQuestionsByQuiz(quiz.id) : [];
+  const unit = quiz && quiz.subject_id ? units.find(u => u.subject_id === quiz.subject_id) : null;
+  const subject = unit ? subjects.find(s => s.id === unit.subject_id) : null;
+  const questions = quiz?.questions || [];
 
   if (!quiz || !unit || !subject) {
     return (

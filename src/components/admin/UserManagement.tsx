@@ -9,25 +9,15 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Search, Edit, Trash2, Calendar } from 'lucide-react';
-import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useAppData } from '@/contexts/AppDataContext';
 import { useToast } from '@/hooks/use-toast';
 
 const UserManagement = () => {
-  const [users, setUsers] = useState<any[]>([]);
-  const { updateData, deleteData, subscribeToData } = useFirebaseData();
+  const { users, updateUser, deleteUser } = useAppData();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [editingUser, setEditingUser] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  useEffect(() => {
-    // الاستماع للتغييرات في المستخدمين
-    const unsubscribe = subscribeToData('users', setUsers, {
-      orderBy: { field: 'createdAt', direction: 'desc' }
-    });
-    
-    return () => unsubscribe();
-  }, []);
 
   const filteredUsers = users.filter(user => 
     !user.isAdmin && (
@@ -37,7 +27,7 @@ const UserManagement = () => {
   );
 
   const handleToggleActive = async (userId: string, isActive: boolean) => {
-    await updateData('users', userId, { isActive });
+    await updateUser(userId, { isActive });
     toast({
       title: "تم تحديث حالة المستخدم",
       description: `تم ${isActive ? 'تفعيل' : 'تعطيل'} الحساب بنجاح`
@@ -47,7 +37,7 @@ const UserManagement = () => {
   const handleExtendExpiry = async (userId: string) => {
     const newExpiryDate = new Date();
     newExpiryDate.setFullYear(newExpiryDate.getFullYear() + 1);
-    await updateData('users', userId, { expiryDate: newExpiryDate.toISOString() });
+    await updateUser(userId, { expiryDate: newExpiryDate.toISOString() });
     toast({
       title: "تم تمديد الاشتراك",
       description: "تم تمديد اشتراك المستخدم لسنة إضافية"
@@ -56,7 +46,7 @@ const UserManagement = () => {
 
   const handleDeleteUser = async (userId: string) => {
     if (confirm('هل أنت متأكد من حذف هذا المستخدم؟')) {
-      await deleteData('users', userId);
+      await deleteUser(userId);
       toast({
         title: "تم حذف المستخدم",
         description: "تم حذف المستخدم بنجاح"
@@ -71,7 +61,7 @@ const UserManagement = () => {
 
   const handleSaveEdit = async () => {
     if (editingUser) {
-      await updateData('users', editingUser.id, {
+      await updateUser(editingUser.id, {
         fullName: editingUser.fullName,
         username: editingUser.username,
         password: editingUser.password
@@ -125,18 +115,12 @@ const UserManagement = () => {
                   <TableCell>{user.username}</TableCell>
                   <TableCell>
                     {user.createdAt ? 
-                      (user.createdAt.seconds ? 
-                        new Date(user.createdAt.seconds * 1000).toLocaleDateString('en-GB') : 
-                        new Date(user.createdAt).toLocaleDateString('en-GB')
-                      ) : '-'
+                      new Date(user.createdAt).toLocaleDateString('en-GB') : '-'
                     }
                   </TableCell>
                   <TableCell>
                     {user.expiryDate ? 
-                      (user.expiryDate.seconds ? 
-                        new Date(user.expiryDate.seconds * 1000).toLocaleDateString('en-GB') : 
-                        new Date(user.expiryDate).toLocaleDateString('en-GB')
-                      ) : '-'
+                      new Date(user.expiryDate).toLocaleDateString('en-GB') : '-'
                     }
                   </TableCell>
                   <TableCell>

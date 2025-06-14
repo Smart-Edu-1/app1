@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Bell, Menu } from 'lucide-react';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from './Sidebar';
 import NotificationsDropdown from './NotificationsDropdown';
@@ -10,7 +10,7 @@ import NotificationsDropdown from './NotificationsDropdown';
 const Header: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const { notifications } = useAppData();
+  const { notifications } = useSupabaseAppData();
   const { user } = useAuth();
 
   const unreadCount = notifications.filter(n => 

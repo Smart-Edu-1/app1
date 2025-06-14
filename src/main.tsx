@@ -3,6 +3,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { AppDataProvider } from "@/contexts/AppDataContext";
 import { SupabaseAppDataProvider } from "@/contexts/SupabaseAppDataContext";
 import { Toaster } from "@/components/ui/toaster";
 import App from './App.tsx';
@@ -16,10 +17,12 @@ root.render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <SupabaseAppDataProvider>
-          <App />
-          <Toaster />
-        </SupabaseAppDataProvider>
+        <AppDataProvider>
+          <SupabaseAppDataProvider>
+            <App />
+            <Toaster />
+          </SupabaseAppDataProvider>
+        </AppDataProvider>
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>

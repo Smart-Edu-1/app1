@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,15 +10,47 @@ const QuizPage: React.FC = () => {
   const navigate = useNavigate();
   const { quizzes, units, subjects } = useSupabaseAppData();
   
-  const [answers, setAnswers] = useState<{ [key: string]: string }>(() => {
-    const saved = sessionStorage.getItem(`quiz-answers-${id}`);
-    return saved ? JSON.parse(saved) : {};
-  });
-  const [checkedQuestions, setCheckedQuestions] = useState<{ [key: string]: boolean }>(() => {
-    const saved = sessionStorage.getItem(`quiz-checked-${id}`);
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [answers, setAnswers] = useState<{ [key: string]: string }>({});
+  const [checkedQuestions, setCheckedQuestions] = useState<{ [key: string]: boolean }>({});
   const [showResults, setShowResults] = useState(false);
+
+  // Load saved data from sessionStorage on component mount
+  useEffect(() => {
+    if (id) {
+      const savedAnswers = sessionStorage.getItem(`quiz-answers-${id}`);
+      const savedChecked = sessionStorage.getItem(`quiz-checked-${id}`);
+      
+      if (savedAnswers) {
+        try {
+          setAnswers(JSON.parse(savedAnswers));
+        } catch (error) {
+          console.error('Error parsing saved answers:', error);
+        }
+      }
+      
+      if (savedChecked) {
+        try {
+          setCheckedQuestions(JSON.parse(savedChecked));
+        } catch (error) {
+          console.error('Error parsing saved checked questions:', error);
+        }
+      }
+    }
+  }, [id]);
+
+  // Save answers to sessionStorage whenever they change
+  useEffect(() => {
+    if (id && Object.keys(answers).length > 0) {
+      sessionStorage.setItem(`quiz-answers-${id}`, JSON.stringify(answers));
+    }
+  }, [answers, id]);
+
+  // Save checked questions to sessionStorage whenever they change
+  useEffect(() => {
+    if (id && Object.keys(checkedQuestions).length > 0) {
+      sessionStorage.setItem(`quiz-checked-${id}`, JSON.stringify(checkedQuestions));
+    }
+  }, [checkedQuestions, id]);
 
   const quiz = quizzes.find(q => q.id === id);
   const unit = quiz && quiz.subject_id ? units.find(u => u.subject_id === quiz.subject_id) : null;
@@ -56,15 +88,11 @@ const QuizPage: React.FC = () => {
   }
 
   const handleAnswerSelect = (questionId: string, answer: string) => {
-    const newAnswers = { ...answers, [questionId]: answer };
-    setAnswers(newAnswers);
-    sessionStorage.setItem(`quiz-answers-${id}`, JSON.stringify(newAnswers));
+    setAnswers(prev => ({ ...prev, [questionId]: answer }));
   };
 
   const handleCheckQuestion = (questionId: string) => {
-    const newChecked = { ...checkedQuestions, [questionId]: true };
-    setCheckedQuestions(newChecked);
-    sessionStorage.setItem(`quiz-checked-${id}`, JSON.stringify(newChecked));
+    setCheckedQuestions(prev => ({ ...prev, [questionId]: true }));
   };
 
   const handleCheckAllQuiz = () => {
@@ -73,7 +101,6 @@ const QuizPage: React.FC = () => {
       checkedAll[q.id] = true;
     });
     setCheckedQuestions(checkedAll);
-    sessionStorage.setItem(`quiz-checked-${id}`, JSON.stringify(checkedAll));
     setShowResults(true);
   };
 

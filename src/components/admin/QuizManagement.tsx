@@ -25,6 +25,7 @@ const QuizManagement = () => {
     title: '',
     description: '',
     subject_id: '',
+    unit_id: '',
     is_active: true
   });
 
@@ -76,6 +77,7 @@ const QuizManagement = () => {
         title: '', 
         description: '', 
         subject_id: '', 
+        unit_id: '',
         is_active: true 
       });
     } catch (error) {
@@ -147,6 +149,7 @@ const QuizManagement = () => {
       title: quiz.title,
       description: quiz.description,
       subject_id: quiz.subject_id || '',
+      unit_id: quiz.unit_id || '',
       is_active: quiz.is_active
     });
     setIsQuizDialogOpen(true);
@@ -358,22 +361,44 @@ const QuizManagement = () => {
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="subjectId">المادة</Label>
-                  <select
-                    id="subjectId"
-                    value={quizFormData.subject_id}
-                    onChange={(e) => setQuizFormData({ ...quizFormData, subject_id: e.target.value })}
-                    className="w-full p-2 border rounded-md"
-                  >
-                    <option value="">اختر المادة</option>
-                    {subjects.map(subject => (
-                      <option key={subject.id} value={subject.id}>
-                        {subject.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                 <div>
+                   <Label htmlFor="subjectId">المادة</Label>
+                   <select
+                     id="subjectId"
+                     value={quizFormData.subject_id}
+                     onChange={(e) => setQuizFormData({ ...quizFormData, subject_id: e.target.value, unit_id: '' })}
+                     className="w-full p-2 border rounded-md"
+                   >
+                     <option value="">اختر المادة</option>
+                     {subjects.map(subject => (
+                       <option key={subject.id} value={subject.id}>
+                         {subject.name}
+                       </option>
+                     ))}
+                   </select>
+                 </div>
+                 
+                 {quizFormData.subject_id && (
+                   <div>
+                     <Label htmlFor="unitId">الوحدة</Label>
+                     <select
+                       id="unitId"
+                       value={quizFormData.unit_id}
+                       onChange={(e) => setQuizFormData({ ...quizFormData, unit_id: e.target.value })}
+                       className="w-full p-2 border rounded-md"
+                     >
+                       <option value="">اختر الوحدة</option>
+                       {units
+                         .filter(unit => unit.subject_id === quizFormData.subject_id && unit.is_active)
+                         .sort((a, b) => a.order_index - b.order_index)
+                         .map(unit => (
+                           <option key={unit.id} value={unit.id}>
+                             {unit.name}
+                           </option>
+                         ))}
+                     </select>
+                   </div>
+                 )}
                 <div>
                   <Label htmlFor="title">اسم الاختبار</Label>
                   <Input
@@ -419,49 +444,52 @@ const QuizManagement = () => {
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>اسم الاختبار</TableHead>
-                <TableHead>المادة</TableHead>
-                <TableHead>عدد الأسئلة</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead>الإجراءات</TableHead>
-              </TableRow>
+               <TableRow>
+                 <TableHead>اسم الاختبار</TableHead>
+                 <TableHead>المادة</TableHead>
+                 <TableHead>الوحدة</TableHead>
+                 <TableHead>عدد الأسئلة</TableHead>
+                 <TableHead>الحالة</TableHead>
+                 <TableHead>الإجراءات</TableHead>
+               </TableRow>
             </TableHeader>
             <TableBody>
-              {quizzes.map((quiz) => {
-                const subject = subjects.find(s => s.id === quiz.subject_id);
-                const questionCount = quiz.questions ? quiz.questions.length : 0;
-                return (
-                  <TableRow key={quiz.id}>
-                    <TableCell className="font-medium">{quiz.title}</TableCell>
-                    <TableCell>{subject?.name || 'غير محدد'}</TableCell>
-                    <TableCell>{questionCount}</TableCell>
-                    <TableCell>
-                      <Badge variant={quiz.is_active ? "default" : "secondary"}>
-                        {quiz.is_active ? 'نشط' : 'معطل'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditQuiz(quiz)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteQuiz(quiz.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+               {quizzes.map((quiz) => {
+                 const subject = subjects.find(s => s.id === quiz.subject_id);
+                 const unit = units.find(u => u.id === quiz.unit_id);
+                 const questionCount = quiz.questions ? quiz.questions.length : 0;
+                 return (
+                   <TableRow key={quiz.id}>
+                     <TableCell className="font-medium">{quiz.title}</TableCell>
+                     <TableCell>{subject?.name || 'غير محدد'}</TableCell>
+                     <TableCell>{unit?.name || 'غير محدد'}</TableCell>
+                     <TableCell>{questionCount}</TableCell>
+                     <TableCell>
+                       <Badge variant={quiz.is_active ? "default" : "secondary"}>
+                         {quiz.is_active ? 'نشط' : 'معطل'}
+                       </Badge>
+                     </TableCell>
+                     <TableCell>
+                       <div className="flex space-x-2">
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => handleEditQuiz(quiz)}
+                         >
+                           <Edit className="h-4 w-4" />
+                         </Button>
+                         <Button
+                           variant="destructive"
+                           size="sm"
+                           onClick={() => handleDeleteQuiz(quiz.id)}
+                         >
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                       </div>
+                     </TableCell>
+                   </TableRow>
+                 );
+               })}
             </TableBody>
           </Table>
         </CardContent>

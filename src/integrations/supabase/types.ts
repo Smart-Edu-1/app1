@@ -277,6 +277,7 @@ export type Database = {
           subject_id: string | null
           time_limit: number | null
           title: string
+          unit_id: string | null
           updated_at: string
         }
         Insert: {
@@ -289,6 +290,7 @@ export type Database = {
           subject_id?: string | null
           time_limit?: number | null
           title: string
+          unit_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -301,6 +303,7 @@ export type Database = {
           subject_id?: string | null
           time_limit?: number | null
           title?: string
+          unit_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -316,6 +319,13 @@ export type Database = {
             columns: ["subject_id"]
             isOneToOne: false
             referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quizzes_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
             referencedColumns: ["id"]
           },
         ]

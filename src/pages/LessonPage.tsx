@@ -132,6 +132,29 @@ const LessonPage: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* Teacher Contact Button - Right below video */}
+          {(subject.teacher_phone || subject.teacher_email || subject.teacher_whatsapp) && (
+            <Card className="mb-6">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">تواصل مع المدرس</h3>
+                    <p className="text-muted-foreground">
+                      للاستفسارات حول هذا الدرس
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={handleContactTeacher}
+                    variant="default"
+                  >
+                    <MessageSquare className="ml-2 h-5 w-5" />
+                    تواصل الآن
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Lesson Content */}
           {lesson.content && canAccessPremium && (
             <Card className="mb-6">
@@ -142,26 +165,6 @@ const LessonPage: React.FC = () => {
                 <div className="prose prose-lg max-w-none text-foreground">
                   <p className="leading-relaxed whitespace-pre-wrap">{lesson.content}</p>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Teacher Contact */}
-          {(subject.teacher_phone || subject.teacher_email || subject.teacher_whatsapp) && (
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4 text-foreground">تواصل مع المدرس</h3>
-                <p className="text-muted-foreground mb-4">
-                  إذا كان لديك أي استفسارات حول هذا الدرس، يمكنك التواصل مع المدرس مباشرة.
-                </p>
-                <Button 
-                  onClick={handleContactTeacher}
-                  className="w-full"
-                  variant="outline"
-                >
-                  <MessageSquare className="ml-2 h-5 w-5" />
-                  تواصل مع المدرس
-                </Button>
               </CardContent>
             </Card>
           )}

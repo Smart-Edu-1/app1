@@ -64,11 +64,14 @@ const LessonPage: React.FC = () => {
   }
 
   const handleContactTeacher = () => {
-    toast({
-      title: "تواصل مع المدرس",
-      description: "يرجى التواصل مع المدرس عبر الواتساب أو البريد الإلكتروني المتاح في صفحة التواصل",
-    });
-    navigate('/app/contact');
+    // اختيار أفضل وسيلة تواصل متاحة بالترتيب: واتساب، ثم هاتف، ثم بريد إلكتروني
+    if (subject.teacher_whatsapp) {
+      window.open(`https://wa.me/${subject.teacher_whatsapp.replace(/[^0-9]/g, '')}`, '_blank');
+    } else if (subject.teacher_phone) {
+      window.open(`tel:${subject.teacher_phone}`, '_self');
+    } else if (subject.teacher_email) {
+      window.open(`mailto:${subject.teacher_email}`, '_self');
+    }
   };
 
   return (
@@ -151,32 +154,14 @@ const LessonPage: React.FC = () => {
                 <p className="text-muted-foreground mb-4">
                   إذا كان لديك أي استفسارات حول هذا الدرس، يمكنك التواصل مع المدرس مباشرة.
                 </p>
-                <div className="flex flex-col space-y-3">
-                  {subject.teacher_phone && (
-                    <Button asChild variant="outline">
-                      <a href={`tel:${subject.teacher_phone}`} className="flex items-center justify-center w-full">
-                        <Phone className="ml-2 h-5 w-5" />
-                        اتصال هاتفي
-                      </a>
-                    </Button>
-                  )}
-                  {subject.teacher_email && (
-                    <Button asChild variant="outline">
-                      <a href={`mailto:${subject.teacher_email}`} className="flex items-center justify-center w-full">
-                        <Mail className="ml-2 h-5 w-5" />
-                        إرسال بريد إلكتروني
-                      </a>
-                    </Button>
-                  )}
-                  {subject.teacher_whatsapp && (
-                    <Button asChild variant="outline">
-                      <a href={`https://wa.me/${subject.teacher_whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full">
-                        <MessageSquare className="ml-2 h-5 w-5" />
-                        مراسلة عبر واتساب
-                      </a>
-                    </Button>
-                  )}
-                </div>
+                <Button 
+                  onClick={handleContactTeacher}
+                  className="w-full"
+                  variant="outline"
+                >
+                  <MessageSquare className="ml-2 h-5 w-5" />
+                  تواصل مع المدرس
+                </Button>
               </CardContent>
             </Card>
           )}

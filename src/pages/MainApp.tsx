@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +15,10 @@ import ContactPage from './ContactPage';
 import PricingPage from './PricingPage';
 import DistributionCentersPage from './DistributionCentersPage';
 import SubjectPage from './SubjectPage';
+import SubjectUnitsPage from './SubjectUnitsPage';
+import SubjectQuizUnitsPage from './SubjectQuizUnitsPage';
 import UnitPage from './UnitPage';
+import UnitLessonsPage from './UnitLessonsPage';
 import UnitQuizzesPage from './UnitQuizzesPage';
 import LessonPage from './LessonPage';
 import QuizPage from './QuizPage';
@@ -36,8 +40,12 @@ const HomePage = () => {
     subjectsData: subjects
   });
 
-  const handleSubjectClick = (subject: any) => {
-    navigate(`/app/subject/${subject.id}`);
+  const handleUnitsClick = (subject: any) => {
+    navigate(`/app/subject/${subject.id}/units`);
+  };
+
+  const handleQuizzesClick = (subject: any) => {
+    navigate(`/app/subject/${subject.id}/quiz-units`);
   };
 
   if (loading) {
@@ -63,12 +71,11 @@ const HomePage = () => {
             {subjects.filter(s => s.is_active).sort((a, b) => a.order_index - b.order_index).map((subject) => (
               <Card 
                 key={subject.id}
-                className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                className="overflow-hidden hover:shadow-lg transition-shadow"
                 style={{ borderLeft: `4px solid ${subject.color}` }}
-                onClick={() => handleSubjectClick(subject)}
               >
                 <CardContent className="p-6">
-                  <div className="flex items-center">
+                  <div className="flex items-center mb-4">
                     <div 
                       className="w-12 h-12 rounded-full flex items-center justify-center mr-4"
                       style={{ backgroundColor: `${subject.color}20` }}
@@ -79,6 +86,21 @@ const HomePage = () => {
                       <h3 className="font-bold text-lg">{subject.name}</h3>
                       <p className="text-muted-foreground text-sm">{subject.description}</p>
                     </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    <Button 
+                      onClick={() => handleUnitsClick(subject)}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      عرض الوحدات
+                    </Button>
+                    <Button 
+                      onClick={() => handleQuizzesClick(subject)}
+                      className="w-full"
+                    >
+                      عرض الاختبارات
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -103,8 +125,12 @@ const MainApp: React.FC = () => {
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/distribution-centers" element={<DistributionCentersPage />} />
             <Route path="/subject/:id" element={<SubjectPage />} />
+            <Route path="/subject/:id/units" element={<SubjectUnitsPage />} />
+            <Route path="/subject/:id/quiz-units" element={<SubjectQuizUnitsPage />} />
+            <Route path="/subject/:subjectId/unit/:unitId/lessons" element={<UnitLessonsPage />} />
             <Route path="/unit/:id" element={<UnitPage />} />
             <Route path="/unit/:id/quizzes" element={<UnitQuizzesPage />} />
+            <Route path="/subject/:subjectId/unit/:unitId/quizzes" element={<UnitQuizzesPage />} />
             <Route path="/lesson/:id" element={<LessonPage />} />
             <Route path="/quiz/:id" element={<QuizPage />} />
             <Route path="/quiz/:quizId/explanation/:questionId" element={<QuizExplanationPage />} />

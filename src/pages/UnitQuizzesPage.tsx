@@ -7,11 +7,13 @@ import { ArrowLeft, Trophy, FileText } from 'lucide-react';
 import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 
 const UnitQuizzesPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id, subjectId, unitId } = useParams<{ id?: string; subjectId?: string; unitId?: string }>();
   const navigate = useNavigate();
   const { subjects, units, quizzes } = useSupabaseAppData();
 
-  const unit = units.find(u => u.id === id);
+  // Support both old and new route patterns
+  const currentUnitId = unitId || id;
+  const unit = units.find(u => u.id === currentUnitId);
   const subject = unit ? subjects.find(s => s.id === unit.subject_id) : null;
   const unitQuizzes = quizzes.filter(q => q.subject_id === unit?.subject_id && q.is_active);
 
@@ -37,11 +39,17 @@ const UnitQuizzesPage: React.FC = () => {
         <div className="mb-6">
           <Button
             variant="ghost"
-            onClick={() => navigate(`/app/unit/${unit.id}`)}
+            onClick={() => {
+              if (subjectId) {
+                navigate(`/app/subject/${subjectId}/quiz-units`);
+              } else {
+                navigate(`/app/unit/${unit.id}`);
+              }
+            }}
             className="mb-4"
           >
             <ArrowLeft className="ml-2 h-4 w-4" />
-            العودة إلى {unit.name}
+            {subjectId ? `العودة إلى اختبارات ${subject?.name}` : `العودة إلى ${unit.name}`}
           </Button>
           
           {/* Page Header */}
@@ -77,28 +85,38 @@ const UnitQuizzesPage: React.FC = () => {
               </div>
             </Card>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {unitQuizzes.map((quiz) => (
                 <Card
                   key={quiz.id}
-                  className="p-6 cursor-pointer transition-all hover:shadow-md hover:bg-muted/20"
-                  onClick={() => handleQuizClick(quiz)}
+                  className="overflow-hidden hover:shadow-lg transition-shadow"
+                  style={{ borderLeft: `4px solid ${subject.color}` }}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center">
-                        <FileText className="h-6 w-6 text-primary-foreground" />
+                  <CardContent className="p-6">
+                    <div className="flex items-center mb-4">
+                      <div 
+                        className="w-12 h-12 rounded-full flex items-center justify-center mr-4"
+                        style={{ backgroundColor: `${subject.color}20` }}
+                      >
+                        <Trophy className="h-6 w-6" style={{ color: subject.color }} />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-foreground mb-1">{quiz.title}</h3>
-                        <p className="text-muted-foreground mb-2">{quiz.description}</p>
-                        <div className="flex items-center space-x-3">
-                          <Badge variant="outline">اختبار تفاعلي</Badge>
-                        </div>
+                        <h3 className="font-bold text-lg">{quiz.title}</h3>
+                        <p className="text-muted-foreground text-sm">{quiz.description}</p>
+                        <Badge variant="outline" className="mt-2">
+                          اختبار تفاعلي
+                        </Badge>
                       </div>
                     </div>
-                    <ArrowLeft className="h-5 w-5 text-muted-foreground" />
-                  </div>
+                    <div>
+                      <Button 
+                        onClick={() => handleQuizClick(quiz)}
+                        className="w-full"
+                      >
+                        حل الاختبار
+                      </Button>
+                    </div>
+                  </CardContent>
                 </Card>
               ))}
             </div>

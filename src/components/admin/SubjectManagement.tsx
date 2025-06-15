@@ -26,7 +26,10 @@ const SubjectManagement = () => {
     color: '#3B82F6',
     imageUrl: '',
     order: 1,
-    isActive: true
+    isActive: true,
+    teacher_phone: '',
+    teacher_email: '',
+    teacher_whatsapp: ''
   });
 
   const handleSubmit = () => {
@@ -53,7 +56,10 @@ const SubjectManagement = () => {
       color: '#3B82F6', 
       imageUrl: '', 
       order: 1, 
-      isActive: true 
+      isActive: true,
+      teacher_phone: '',
+      teacher_email: '',
+      teacher_whatsapp: ''
     });
   };
 
@@ -66,7 +72,10 @@ const SubjectManagement = () => {
       color: subject.color,
       imageUrl: subject.imageUrl || '',
       order: subject.order,
-      isActive: subject.isActive
+      isActive: subject.isActive,
+      teacher_phone: subject.teacher_phone || '',
+      teacher_email: subject.teacher_email || '',
+      teacher_whatsapp: subject.teacher_whatsapp || ''
     });
     setIsDialogOpen(true);
   };
@@ -142,6 +151,37 @@ const SubjectManagement = () => {
                 label="صورة غلاف المادة"
                 aspectRatio="600x375"
               />
+              <div className="space-y-2">
+                <h4 className="font-medium">معلومات التواصل مع المدرس</h4>
+                <div>
+                  <Label htmlFor="teacher_phone">رقم هاتف المدرس</Label>
+                  <Input
+                    id="teacher_phone"
+                    value={formData.teacher_phone || ''}
+                    onChange={(e) => setFormData({ ...formData, teacher_phone: e.target.value })}
+                    placeholder="مثال: +9647701234567"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="teacher_email">البريد الإلكتروني للمدرس</Label>
+                  <Input
+                    id="teacher_email"
+                    type="email"
+                    value={formData.teacher_email || ''}
+                    onChange={(e) => setFormData({ ...formData, teacher_email: e.target.value })}
+                    placeholder="مثال: teacher@example.com"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="teacher_whatsapp">رقم واتساب المدرس</Label>
+                  <Input
+                    id="teacher_whatsapp"
+                    value={formData.teacher_whatsapp || ''}
+                    onChange={(e) => setFormData({ ...formData, teacher_whatsapp: e.target.value })}
+                    placeholder="مثال: +9647701234567"
+                  />
+                </div>
+              </div>
               <div>
                 <Label htmlFor="order">ترتيب المادة</Label>
                 <Input

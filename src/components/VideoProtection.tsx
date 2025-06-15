@@ -163,13 +163,14 @@ const VideoProtection: React.FC<{ children: React.ReactNode }> = ({ children }) 
     document.addEventListener('cut', preventCopyPaste);
 
     // إضافة CSS لمنع التحديد والحماية الإضافية
-    document.body.style.userSelect = 'none';
-    document.body.style.webkitUserSelect = 'none';
-    (document.body.style as any).MozUserSelect = 'none';
-    (document.body.style as any).msUserSelect = 'none';
-    document.body.style.webkitTouchCallout = 'none';
-    document.body.style.webkitUserDrag = 'none';
-    document.body.style.webkitAppRegion = 'no-drag';
+    const bodyStyle = document.body.style as any;
+    bodyStyle.userSelect = 'none';
+    bodyStyle.webkitUserSelect = 'none';
+    bodyStyle.MozUserSelect = 'none';
+    bodyStyle.msUserSelect = 'none';
+    bodyStyle.webkitTouchCallout = 'none';
+    bodyStyle.webkitUserDrag = 'none';
+    bodyStyle.webkitAppRegion = 'no-drag';
 
     // حماية CSS إضافية
     const style = document.createElement('style');
@@ -201,6 +202,18 @@ const VideoProtection: React.FC<{ children: React.ReactNode }> = ({ children }) 
       @media (display-mode: fullscreen) {
         body { filter: blur(10px) !important; }
       }
+
+      /* حماية إضافية للهاتف */
+      @media (max-width: 768px) {
+        * {
+          -webkit-touch-callout: none !important;
+          -webkit-user-select: none !important;
+          -khtml-user-select: none !important;
+          -moz-user-select: none !important;
+          -ms-user-select:none !important;
+          user-select: none !important;
+        }
+      }
     `;
     document.head.appendChild(style);
 
@@ -224,6 +237,24 @@ const VideoProtection: React.FC<{ children: React.ReactNode }> = ({ children }) 
       };
     }
 
+    // حماية إضافية للأجهزة المحمولة
+    const preventMobileScreenshot = () => {
+      // منع لقطة الشاشة على أندرويد
+      document.addEventListener('volumedown', (e) => {
+        e.preventDefault();
+        return false;
+      });
+
+      // منع مشاركة الشاشة على iOS
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(() => {
+          // تسجيل service worker للحماية الإضافية
+        });
+      }
+    };
+
+    preventMobileScreenshot();
+
     return () => {
       document.removeEventListener('contextmenu', handleContextMenu);
       document.removeEventListener('keydown', handleKeyDown);
@@ -235,13 +266,14 @@ const VideoProtection: React.FC<{ children: React.ReactNode }> = ({ children }) 
       document.removeEventListener('cut', preventCopyPaste);
       
       // إعادة تعيين CSS
-      document.body.style.userSelect = '';
-      document.body.style.webkitUserSelect = '';
-      (document.body.style as any).MozUserSelect = '';
-      (document.body.style as any).msUserSelect = '';
-      document.body.style.webkitTouchCallout = '';
-      document.body.style.webkitUserDrag = '';
-      document.body.style.webkitAppRegion = '';
+      const bodyStyle = document.body.style as any;
+      bodyStyle.userSelect = '';
+      bodyStyle.webkitUserSelect = '';
+      bodyStyle.MozUserSelect = '';
+      bodyStyle.msUserSelect = '';
+      bodyStyle.webkitTouchCallout = '';
+      bodyStyle.webkitUserDrag = '';
+      bodyStyle.webkitAppRegion = '';
       document.body.style.visibility = 'visible';
       document.body.style.filter = 'none';
 

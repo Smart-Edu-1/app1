@@ -143,7 +143,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, title, onError }) => {
             style={{ zIndex: 1 }}
             onContextMenu={(e) => e.preventDefault()}
             onDragStart={(e) => e.preventDefault()}
-            onSelectStart={(e) => e.preventDefault()}
           />
         </div>
       );
@@ -180,7 +179,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, title, onError }) => {
             style={{ zIndex: 1 }}
             onContextMenu={(e) => e.preventDefault()}
             onDragStart={(e) => e.preventDefault()}
-            onSelectStart={(e) => e.preventDefault()}
           />
         </div>
       );
@@ -209,7 +207,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, title, onError }) => {
           pointerEvents: 'auto'
         }}
         onDragStart={(e) => e.preventDefault()}
-        onSelectStart={(e) => e.preventDefault()}
       >
         Your browser does not support the video tag.
       </video>
@@ -219,7 +216,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, title, onError }) => {
         style={{ zIndex: 1 }}
         onContextMenu={(e) => e.preventDefault()}
         onDragStart={(e) => e.preventDefault()}
-        onSelectStart={(e) => e.preventDefault()}
       />
     </div>
   );

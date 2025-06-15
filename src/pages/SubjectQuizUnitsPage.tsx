@@ -78,7 +78,7 @@ const SubjectQuizUnitsPage: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {subjectUnits.map((unit) => {
-                const unitQuizzes = quizzes.filter(q => q.subject_id === id && q.is_active);
+                const unitQuizzes = quizzes.filter(q => q.unit_id === unit.id && q.is_active);
                 
                 return (
                   <Card 

@@ -15,7 +15,7 @@ const UnitQuizzesPage: React.FC = () => {
   const currentUnitId = unitId || id;
   const unit = units.find(u => u.id === currentUnitId);
   const subject = unit ? subjects.find(s => s.id === unit.subject_id) : null;
-  const unitQuizzes = quizzes.filter(q => q.subject_id === unit?.subject_id && q.is_active);
+  const unitQuizzes = quizzes.filter(q => q.unit_id === currentUnitId && q.is_active);
 
   if (!unit || !subject) {
     return (

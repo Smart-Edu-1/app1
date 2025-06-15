@@ -341,6 +341,10 @@ export type Database = {
           is_active: boolean
           name: string
           order_index: number
+          teacher_contact: string | null
+          teacher_email: string | null
+          teacher_phone: string | null
+          teacher_whatsapp: string | null
           updated_at: string
         }
         Insert: {
@@ -353,6 +357,10 @@ export type Database = {
           is_active?: boolean
           name: string
           order_index?: number
+          teacher_contact?: string | null
+          teacher_email?: string | null
+          teacher_phone?: string | null
+          teacher_whatsapp?: string | null
           updated_at?: string
         }
         Update: {
@@ -365,6 +373,10 @@ export type Database = {
           is_active?: boolean
           name?: string
           order_index?: number
+          teacher_contact?: string | null
+          teacher_email?: string | null
+          teacher_phone?: string | null
+          teacher_whatsapp?: string | null
           updated_at?: string
         }
         Relationships: []

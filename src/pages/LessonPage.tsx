@@ -3,7 +3,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MessageSquare, Lock, Play } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Lock, Play, Phone, Mail } from 'lucide-react';
 import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import VideoProtection from '@/components/VideoProtection';
@@ -144,22 +144,42 @@ const LessonPage: React.FC = () => {
           )}
 
           {/* Teacher Contact */}
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-4 text-foreground">تواصل مع المدرس</h3>
-              <p className="text-muted-foreground mb-4">
-                إذا كان لديك أي استفسارات حول هذا الدرس، يمكنك التواصل مع المدرس من خلال قنوات التواصل المتاحة.
-              </p>
-              <Button 
-                onClick={handleContactTeacher}
-                className="w-full"
-                variant="outline"
-              >
-                <MessageSquare className="ml-2 h-5 w-5" />
-                تواصل مع المدرس
-              </Button>
-            </CardContent>
-          </Card>
+          {(subject.teacher_phone || subject.teacher_email || subject.teacher_whatsapp) && (
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-4 text-foreground">تواصل مع المدرس</h3>
+                <p className="text-muted-foreground mb-4">
+                  إذا كان لديك أي استفسارات حول هذا الدرس، يمكنك التواصل مع المدرس مباشرة.
+                </p>
+                <div className="flex flex-col space-y-3">
+                  {subject.teacher_phone && (
+                    <Button asChild variant="outline">
+                      <a href={`tel:${subject.teacher_phone}`} className="flex items-center justify-center w-full">
+                        <Phone className="ml-2 h-5 w-5" />
+                        اتصال هاتفي
+                      </a>
+                    </Button>
+                  )}
+                  {subject.teacher_email && (
+                    <Button asChild variant="outline">
+                      <a href={`mailto:${subject.teacher_email}`} className="flex items-center justify-center w-full">
+                        <Mail className="ml-2 h-5 w-5" />
+                        إرسال بريد إلكتروني
+                      </a>
+                    </Button>
+                  )}
+                  {subject.teacher_whatsapp && (
+                    <Button asChild variant="outline">
+                      <a href={`https://wa.me/${subject.teacher_whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full">
+                        <MessageSquare className="ml-2 h-5 w-5" />
+                        مراسلة عبر واتساب
+                      </a>
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </VideoProtection>

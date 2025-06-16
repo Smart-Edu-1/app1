@@ -47,7 +47,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check for persisted login state
     const checkPersistedLogin = async () => {
       const persistedUser = localStorage.getItem('smart_edu_user');
       const deviceId = getDeviceId();
@@ -57,52 +56,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userData = JSON.parse(persistedUser);
           console.log('Found persisted user:', userData);
           
-          // Verify user still exists and device matches
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userData.id)
-            .eq('is_active', true)
-            .single();
+          // للمشرفين - لا نحتاج للتحقق من معرف الجهاز
+          if (userData.isAdmin) {
+            const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', userData.id)
+              .eq('is_active', true)
+              .single();
 
-          if (profile && !error) {
-            // Check if user was logged out manually
-            if (profile.is_logged_out) {
-              console.log('User was logged out manually, clearing persisted state');
-              localStorage.removeItem('smart_edu_user');
+            if (profile && !error) {
+              const restoredUser: User = {
+                id: profile.id,
+                username: profile.username,
+                fullName: profile.full_name,
+                isAdmin: profile.is_admin,
+                isActive: profile.is_active,
+                expiryDate: profile.expiry_date,
+                createdAt: profile.created_at,
+                deviceId: profile.device_id,
+                isLoggedOut: profile.is_logged_out
+              };
+              
+              setUser(restoredUser);
+              console.log('Admin user state restored from localStorage');
               return;
             }
-
-            // Check device ID if it exists
-            if (profile.device_id && profile.device_id !== deviceId) {
-              console.log('Device ID mismatch, clearing persisted state');
-              localStorage.removeItem('smart_edu_user');
-              toast({
-                title: "تسجيل الدخول مطلوب",
-                description: "تم تسجيل الخروج بسبب تغيير الجهاز",
-                variant: "destructive"
-              });
-              return;
-            }
-
-            const restoredUser: User = {
-              id: profile.id,
-              username: profile.username,
-              fullName: profile.full_name,
-              isAdmin: profile.is_admin,
-              isActive: profile.is_active,
-              expiryDate: profile.expiry_date,
-              createdAt: profile.created_at,
-              deviceId: profile.device_id,
-              isLoggedOut: profile.is_logged_out
-            };
-            
-            setUser(restoredUser);
-            console.log('User state restored from localStorage');
           } else {
-            console.log('Profile not found or error, clearing persisted state');
-            localStorage.removeItem('smart_edu_user');
+            // للطلاب - التحقق من معرف الجهاز وحالة تسجيل الخروج
+            const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', userData.id)
+              .eq('is_active', true)
+              .single();
+
+            if (profile && !error) {
+              // التحقق من أن معرف الجهاز موجود ومطابق
+              if (profile.device_id && profile.device_id === deviceId && !profile.is_logged_out) {
+                const restoredUser: User = {
+                  id: profile.id,
+                  username: profile.username,
+                  fullName: profile.full_name,
+                  isAdmin: profile.is_admin,
+                  isActive: profile.is_active,
+                  expiryDate: profile.expiry_date,
+                  createdAt: profile.created_at,
+                  deviceId: profile.device_id,
+                  isLoggedOut: profile.is_logged_out
+                };
+                
+                setUser(restoredUser);
+                console.log('Student user state restored from localStorage');
+                return;
+              } else if (profile.device_id && profile.device_id !== deviceId) {
+                console.log('Device ID mismatch for student, clearing persisted state');
+                localStorage.removeItem('smart_edu_user');
+                return;
+              } else if (profile.is_logged_out) {
+                console.log('Student was logged out manually, clearing persisted state');
+                localStorage.removeItem('smart_edu_user');
+                return;
+              }
+            }
           }
+          
+          console.log('Profile verification failed, clearing persisted state');
+          localStorage.removeItem('smart_edu_user');
         } catch (error) {
           console.error('Error parsing persisted user:', error);
           localStorage.removeItem('smart_edu_user');
@@ -111,6 +131,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     checkPersistedLogin();
+
+    // مراقبة تحديثات قاعدة البيانات للطلاب
+    const channel = supabase
+      .channel('profiles-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles'
+        },
+        (payload) => {
+          const updatedProfile = payload.new as any;
+          
+          // إذا تم حذف معرف الجهاز من قبل المشرف
+          if (user && user.id === updatedProfile.id && !user.isAdmin) {
+            if (!updatedProfile.device_id && user.deviceId) {
+              // تسجيل خروج فوري
+              setUser(null);
+              setSession(null);
+              localStorage.removeItem('smart_edu_user');
+              
+              toast({
+                title: "تم تسجيل خروجك",
+                description: "تم تسجيل خروجك من قبل المشرف",
+                variant: "destructive"
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -154,8 +206,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      subscription.unsubscribe();
+      supabase.removeChannel(channel);
+    };
+  }, [user, toast]);
 
   // Calculate isGuest and isPremiumUser based on user state
   const isGuest = user?.id === 'guest';
@@ -186,19 +241,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
-      // التحقق من معرف الجهاز
+      // للمشرفين - السماح بتسجيل الدخول من أي جهاز
+      if (profile.is_admin) {
+        const userData: User = {
+          id: profile.id,
+          username: profile.username,
+          fullName: profile.full_name,
+          isAdmin: profile.is_admin,
+          isActive: profile.is_active,
+          expiryDate: profile.expiry_date,
+          createdAt: profile.created_at,
+          deviceId: profile.device_id,
+          isLoggedOut: false
+        };
+        
+        setUser(userData);
+        localStorage.setItem('smart_edu_user', JSON.stringify(userData));
+        
+        console.log('تم تسجيل دخول المشرف بنجاح');
+        return true;
+      }
+
+      // للطلاب - التحقق من معرف الجهاز
       if (profile.device_id && profile.device_id !== deviceId) {
         console.log('Device ID mismatch:', { stored: profile.device_id, current: deviceId });
         toast({
           title: "جهاز غير مسموح",
-          description: "لا يمكن تسجيل الدخول من جهاز مختلف. يرجى الاتصال بالإدارة",
+          description: "تواصل مع الدعم لحل المشكلة",
           variant: "destructive"
         });
         return false;
       }
 
-      // التحقق من حالة تسجيل الخروج
-      if (profile.device_id && !profile.is_logged_out) {
+      // التحقق من حالة تسجيل الخروج للطلاب الذين لديهم معرف جهاز
+      if (profile.device_id && profile.is_logged_out) {
+        toast({
+          title: "يجب تسجيل الخروج أولاً",
+          description: "يجب تسجيل الخروج من الجلسة السابقة قبل تسجيل الدخول مرة أخرى",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // التحقق للطلاب الذين ليس لديهم معرف جهاز
+      if (!profile.device_id && profile.is_logged_out) {
         toast({
           title: "يجب تسجيل الخروج أولاً",
           description: "يجب تسجيل الخروج من الجلسة السابقة قبل تسجيل الدخول مرة أخرى",
@@ -378,11 +464,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     if (user && user.id !== 'guest') {
-      // تحديث حالة تسجيل الخروج في قاعدة البيانات
-      await supabase
-        .from('profiles')
-        .update({ is_logged_out: true })
-        .eq('id', user.id);
+      // تحديث حالة تسجيل الخروج في قاعدة البيانات (للطلاب فقط)
+      if (!user.isAdmin) {
+        await supabase
+          .from('profiles')
+          .update({ is_logged_out: true })
+          .eq('id', user.id);
+      }
     }
     
     await supabase.auth.signOut();

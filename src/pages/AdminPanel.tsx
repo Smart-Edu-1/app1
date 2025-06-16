@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, Users, FileText, Star, Bell, Settings, LogOut, BarChart3, Layers, Play, HelpCircle, MapPin } from 'lucide-react';
 import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useToast } from '@/hooks/use-toast';
+import VideoProtection from '@/components/VideoProtection';
 import UserManagement from '@/components/admin/UserManagement';
 import CodeManagement from '@/components/admin/CodeManagement';
 import SubjectManagement from '@/components/admin/SubjectManagement';
@@ -164,35 +165,37 @@ const AdminPanel: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <AdminSidebar />
-      
-      <div className="flex-1 p-6">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold">لوحة تحكم Smart Edu</h1>
-            <p className="text-muted-foreground">مرحباً {user?.fullName}</p>
-          </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 ml-2" />
-            تسجيل الخروج
-          </Button>
-        </div>
+    <VideoProtection>
+      <div className="min-h-screen bg-gray-50 flex">
+        <AdminSidebar />
         
-        <Routes>
-          <Route path="/" element={<AdminDashboard />} />
-          <Route path="/users" element={<UserManagement />} />
-          <Route path="/subjects" element={<SubjectManagement />} />
-          <Route path="/units" element={<UnitManagement />} />
-          <Route path="/lessons" element={<LessonManagement />} />
-          <Route path="/quizzes" element={<QuizManagement />} />
-          <Route path="/codes" element={<CodeManagement />} />
-          <Route path="/distribution-centers" element={<DistributionCenterManagement />} />
-          <Route path="/notifications" element={<NotificationManagement />} />
-          <Route path="/settings" element={<AdminSettings />} />
-        </Routes>
+        <div className="flex-1 p-6">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-2xl font-bold">لوحة تحكم Smart Edu</h1>
+              <p className="text-muted-foreground">مرحباً {user?.fullName}</p>
+            </div>
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="w-4 h-4 ml-2" />
+              تسجيل الخروج
+            </Button>
+          </div>
+          
+          <Routes>
+            <Route path="/" element={<AdminDashboard />} />
+            <Route path="/users" element={<UserManagement />} />
+            <Route path="/subjects" element={<SubjectManagement />} />
+            <Route path="/units" element={<UnitManagement />} />
+            <Route path="/lessons" element={<LessonManagement />} />
+            <Route path="/quizzes" element={<QuizManagement />} />
+            <Route path="/codes" element={<CodeManagement />} />
+            <Route path="/distribution-centers" element={<DistributionCenterManagement />} />
+            <Route path="/notifications" element={<NotificationManagement />} />
+            <Route path="/settings" element={<AdminSettings />} />
+          </Routes>
+        </div>
       </div>
-    </div>
+    </VideoProtection>
   );
 };
 

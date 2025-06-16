@@ -228,11 +228,13 @@ export type Database = {
         Row: {
           activation_code: string | null
           created_at: string
+          device_id: string | null
           expiry_date: string | null
           full_name: string
           id: string
           is_active: boolean
           is_admin: boolean
+          is_logged_out: boolean | null
           password: string
           updated_at: string
           user_id: string | null
@@ -241,11 +243,13 @@ export type Database = {
         Insert: {
           activation_code?: string | null
           created_at?: string
+          device_id?: string | null
           expiry_date?: string | null
           full_name: string
           id?: string
           is_active?: boolean
           is_admin?: boolean
+          is_logged_out?: boolean | null
           password: string
           updated_at?: string
           user_id?: string | null
@@ -254,11 +258,13 @@ export type Database = {
         Update: {
           activation_code?: string | null
           created_at?: string
+          device_id?: string | null
           expiry_date?: string | null
           full_name?: string
           id?: string
           is_active?: boolean
           is_admin?: boolean
+          is_logged_out?: boolean | null
           password?: string
           updated_at?: string
           user_id?: string | null

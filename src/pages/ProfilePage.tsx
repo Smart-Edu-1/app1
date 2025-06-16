@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { User, Eye, EyeOff, LogOut, ArrowLeft, Loader2 } from 'lucide-react';
+import { User, Eye, EyeOff, LogOut, ArrowLeft, Loader2, Smartphone } from 'lucide-react';
 
 const ProfilePage: React.FC = () => {
   const { user, logout, isGuest } = useAuth();
@@ -119,6 +120,21 @@ const ProfilePage: React.FC = () => {
                     {user.isActive ? 'نشط' : 'معطل'}
                   </span>
                 </div>
+
+                {user.deviceId && (
+                  <div className="flex flex-col space-y-2">
+                    <span className="text-sm font-medium text-gray-600 flex items-center">
+                      <Smartphone className="ml-1 h-4 w-4" />
+                      معرف الجهاز:
+                    </span>
+                    <span className="text-sm text-gray-500 font-mono bg-gray-50 p-2 rounded">
+                      {user.deviceId}
+                    </span>
+                    <p className="text-xs text-blue-600">
+                      هذا الحساب مرتبط بجهاز محدد لضمان الأمان
+                    </p>
+                  </div>
+                )}
               </>
             )}
 

@@ -1,7 +1,9 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
+import { getDeviceId, clearDeviceId } from '@/utils/deviceUtils';
 
 interface User {
   id: string;
@@ -11,6 +13,8 @@ interface User {
   isActive: boolean;
   expiryDate?: string;
   createdAt: string;
+  deviceId?: string;
+  isLoggedOut?: boolean;
 }
 
 interface AuthContextType {
@@ -43,6 +47,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
+    // Check for persisted login state
+    const checkPersistedLogin = async () => {
+      const persistedUser = localStorage.getItem('smart_edu_user');
+      const deviceId = getDeviceId();
+      
+      if (persistedUser) {
+        try {
+          const userData = JSON.parse(persistedUser);
+          console.log('Found persisted user:', userData);
+          
+          // Verify user still exists and device matches
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userData.id)
+            .eq('is_active', true)
+            .single();
+
+          if (profile && !error) {
+            // Check if user was logged out manually
+            if (profile.is_logged_out) {
+              console.log('User was logged out manually, clearing persisted state');
+              localStorage.removeItem('smart_edu_user');
+              return;
+            }
+
+            // Check device ID if it exists
+            if (profile.device_id && profile.device_id !== deviceId) {
+              console.log('Device ID mismatch, clearing persisted state');
+              localStorage.removeItem('smart_edu_user');
+              toast({
+                title: "تسجيل الدخول مطلوب",
+                description: "تم تسجيل الخروج بسبب تغيير الجهاز",
+                variant: "destructive"
+              });
+              return;
+            }
+
+            const restoredUser: User = {
+              id: profile.id,
+              username: profile.username,
+              fullName: profile.full_name,
+              isAdmin: profile.is_admin,
+              isActive: profile.is_active,
+              expiryDate: profile.expiry_date,
+              createdAt: profile.created_at,
+              deviceId: profile.device_id,
+              isLoggedOut: profile.is_logged_out
+            };
+            
+            setUser(restoredUser);
+            console.log('User state restored from localStorage');
+          } else {
+            console.log('Profile not found or error, clearing persisted state');
+            localStorage.removeItem('smart_edu_user');
+          }
+        } catch (error) {
+          console.error('Error parsing persisted user:', error);
+          localStorage.removeItem('smart_edu_user');
+        }
+      }
+    };
+
+    checkPersistedLogin();
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -65,7 +134,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               isAdmin: profile.is_admin,
               isActive: profile.is_active,
               expiryDate: profile.expiry_date,
-              createdAt: profile.created_at
+              createdAt: profile.created_at,
+              deviceId: profile.device_id,
+              isLoggedOut: profile.is_logged_out
             };
             setUser(userData);
           } else {
@@ -93,6 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       console.log('محاولة تسجيل الدخول...', username);
+      const deviceId = getDeviceId();
       
       // البحث عن المستخدم في جدول profiles
       const { data: profile, error } = await supabase
@@ -114,6 +186,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
+      // التحقق من معرف الجهاز
+      if (profile.device_id && profile.device_id !== deviceId) {
+        console.log('Device ID mismatch:', { stored: profile.device_id, current: deviceId });
+        toast({
+          title: "جهاز غير مسموح",
+          description: "لا يمكن تسجيل الدخول من جهاز مختلف. يرجى الاتصال بالإدارة",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // التحقق من حالة تسجيل الخروج
+      if (profile.device_id && !profile.is_logged_out) {
+        toast({
+          title: "يجب تسجيل الخروج أولاً",
+          description: "يجب تسجيل الخروج من الجلسة السابقة قبل تسجيل الدخول مرة أخرى",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // تحديث معرف الجهاز وحالة تسجيل الخروج
+      const updateData: any = {
+        is_logged_out: false
+      };
+
+      // إذا لم يكن هناك device_id مخزن، احفظ معرف الجهاز الحالي
+      if (!profile.device_id) {
+        updateData.device_id = deviceId;
+      }
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', profile.id);
+
+      if (updateError) {
+        console.error('خطأ في تحديث معرف الجهاز:', updateError);
+        toast({
+          title: "خطأ في تسجيل الدخول",
+          description: "حدث خطأ أثناء تسجيل الدخول",
+          variant: "destructive"
+        });
+        return false;
+      }
+
       // إنشاء بيانات المستخدم
       const userData: User = {
         id: profile.id,
@@ -122,13 +240,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin: profile.is_admin,
         isActive: profile.is_active,
         expiryDate: profile.expiry_date,
-        createdAt: profile.created_at
+        createdAt: profile.created_at,
+        deviceId: updateData.device_id || profile.device_id,
+        isLoggedOut: false
       };
       
       console.log('بيانات المستخدم المسجل:', userData);
       console.log('هل المستخدم مشرف؟', userData.isAdmin);
       
       setUser(userData);
+      
+      // حفظ حالة المستخدم في localStorage للبقاء مسجل الدخول
+      localStorage.setItem('smart_edu_user', JSON.stringify(userData));
+      
       console.log('تم تسجيل الدخول بنجاح');
       return true;
     } catch (error: any) {
@@ -145,6 +269,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (fullName: string, username: string, password: string, activationCode: string): Promise<boolean> => {
     try {
       console.log('محاولة التحقق من كود التفعيل:', activationCode);
+      const deviceId = getDeviceId();
       
       // التحقق من وجود كود التفعيل
       const { data: codeData, error: codeError } = await supabase
@@ -183,7 +308,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const expiryDate = new Date();
       expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
-      // إنشاء المستخدم في جدول profiles مباشرة
+      // إنشاء المستخدم في جدول profiles مباشرة مع معرف الجهاز
       const { data: newProfile, error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -193,7 +318,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           is_active: true,
           is_admin: false,
           expiry_date: expiryDate.toISOString(),
-          activation_code: activationCode
+          activation_code: activationCode,
+          device_id: deviceId,
+          is_logged_out: false
         })
         .select()
         .single();
@@ -222,10 +349,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin: newProfile.is_admin,
         isActive: newProfile.is_active,
         expiryDate: newProfile.expiry_date,
-        createdAt: newProfile.created_at
+        createdAt: newProfile.created_at,
+        deviceId: newProfile.device_id,
+        isLoggedOut: false
       };
       
       setUser(userData);
+      
+      // حفظ حالة المستخدم في localStorage للبقاء مسجل الدخول
+      localStorage.setItem('smart_edu_user', JSON.stringify(userData));
       
       toast({
         title: "تم إنشاء الحساب بنجاح",
@@ -245,9 +377,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    if (user && user.id !== 'guest') {
+      // تحديث حالة تسجيل الخروج في قاعدة البيانات
+      await supabase
+        .from('profiles')
+        .update({ is_logged_out: true })
+        .eq('id', user.id);
+    }
+    
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
+    
+    // مسح البيانات المحفوظة
+    localStorage.removeItem('smart_edu_user');
+    
+    console.log('تم تسجيل الخروج وتحديث حالة قاعدة البيانات');
   };
 
   const enterAsGuest = () => {
@@ -260,6 +405,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString()
     };
     setUser(guestUser);
+    
+    // حفظ حالة الضيف في localStorage
+    localStorage.setItem('smart_edu_user', JSON.stringify(guestUser));
   };
 
   return (

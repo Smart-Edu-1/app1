@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
@@ -25,6 +26,7 @@ interface AuthContextType {
   enterAsGuest: () => void;
   isGuest: boolean;
   isPremiumUser: boolean;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -35,7 +37,8 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
   enterAsGuest: () => {},
   isGuest: false,
-  isPremiumUser: false
+  isPremiumUser: false,
+  isLoading: true
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -43,6 +46,7 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -62,11 +66,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // للضيوف - استعادة الحالة مباشرة
           if (userData.id === 'guest') {
             setUser(userData);
+            setIsLoading(false);
             console.log('Guest user state restored from localStorage');
             return;
           }
           
-          // للمشرفين - لا نحتاج للتحقق من معرف الجهاز
+          // للمشرفين - لا نحتاج للتحقق من معرف الجهاز أو device_id
           if (userData.isAdmin) {
             const { data: profile, error } = await supabase
               .from('profiles')
@@ -89,7 +94,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               };
               
               setUser(restoredUser);
-              console.log('Admin user state restored from localStorage');
+              setIsLoading(false);
+              console.log('Admin user state restored successfully');
               return;
             }
           } else {
@@ -117,16 +123,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 };
                 
                 setUser(restoredUser);
+                setIsLoading(false);
                 console.log('Student user state restored from localStorage');
                 return;
               } else if (profile.device_id && profile.device_id !== deviceId) {
                 console.log('Device ID mismatch for student, clearing persisted state');
                 localStorage.removeItem('smart_edu_user');
-                return;
               } else if (profile.is_logged_out) {
                 console.log('Student was logged out manually, clearing persisted state');
                 localStorage.removeItem('smart_edu_user');
-                return;
               }
             }
           }
@@ -138,11 +143,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.removeItem('smart_edu_user');
         }
       }
+      
+      setIsLoading(false);
     };
 
     checkPersistedLogin();
 
-    // مراقبة تحديثات قاعدة البيانات للطلاب
+    // مراقبة تحديثات قاعدة البيانات للطلاب فقط
     const channel = supabase
       .channel('profiles-changes')
       .on(
@@ -155,7 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         (payload) => {
           const updatedProfile = payload.new as any;
           
-          // إذا تم حذف معرف الجهاز من قبل المشرف
+          // إذا تم حذف معرف الجهاز من قبل المشرف للطلاب فقط
           if (user && user.id === updatedProfile.id && !user.isAdmin) {
             if (!updatedProfile.device_id && user.deviceId) {
               // تسجيل خروج فوري
@@ -179,42 +186,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, session) => {
         console.log('Auth state changed:', event, session);
         setSession(session);
-        
-        if (session?.user) {
-          // Fetch user profile from our profiles table
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .single();
-
-          if (profile && !error) {
-            const userData: User = {
-              id: profile.id,
-              username: profile.username,
-              fullName: profile.full_name,
-              isAdmin: profile.is_admin,
-              isActive: profile.is_active,
-              expiryDate: profile.expiry_date,
-              createdAt: profile.created_at,
-              deviceId: profile.device_id,
-              isLoggedOut: profile.is_logged_out
-            };
-            setUser(userData);
-          } else {
-            console.error('Error fetching profile:', error);
-            setUser(null);
-          }
-        } else {
-          setUser(null);
-        }
       }
     );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
 
     return () => {
       subscription.unsubscribe();
@@ -226,7 +199,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isGuest = user?.id === 'guest';
   const isPremiumUser = user ? !isGuest && user.isActive && (!user.expiryDate || new Date(user.expiryDate) > new Date()) : false;
 
-  console.log('AuthContext current state:', { user, isGuest, isPremiumUser });
+  console.log('AuthContext current state:', { user, isGuest, isPremiumUser, isLoading });
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
@@ -253,7 +226,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
-      // للمشرفين - السماح بتسجيل الدخول من أي جهاز
+      // للمشرفين - السماح بتسجيل الدخول من أي جهاز بدون أي قيود
       if (profile.is_admin) {
         const userData: User = {
           id: profile.id,
@@ -540,7 +513,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logout,
       enterAsGuest,
       isGuest,
-      isPremiumUser
+      isPremiumUser,
+      isLoading
     }}>
       {children}
     </AuthContext.Provider>

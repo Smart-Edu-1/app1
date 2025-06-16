@@ -18,11 +18,11 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   
   const navigate = useNavigate();
-  const { login, enterAsGuest, user } = useAuth();
+  const { login, enterAsGuest, user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
   React.useEffect(() => {
-    if (user) {
+    if (!authLoading && user) {
       console.log('المستخدم الحالي:', user);
       if (user.isAdmin) {
         console.log('توجيه إلى لوحة الإدارة');
@@ -32,7 +32,7 @@ const LoginPage = () => {
         navigate('/app');
       }
     }
-  }, [user, navigate]);
+  }, [user, navigate, authLoading]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +68,20 @@ const LoginPage = () => {
   const handleRegister = () => {
     navigate('/register');
   };
+
+  // Show loading state while auth is initializing
+  if (authLoading) {
+    return (
+      <VideoProtection>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p className="text-gray-500">جارٍ التحقق من حالة تسجيل الدخول...</p>
+          </div>
+        </div>
+      </VideoProtection>
+    );
+  }
 
   if (showLogin) {
     return (

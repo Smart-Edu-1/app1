@@ -4,29 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { User, Eye, EyeOff, LogOut, ArrowLeft, Loader2, Smartphone } from 'lucide-react';
+import { User, Eye, EyeOff, LogOut, ArrowLeft, Smartphone } from 'lucide-react';
 import VideoProtection from '@/components/VideoProtection';
 
 const ProfilePage: React.FC = () => {
-  const { user, logout, isGuest } = useAuth();
+  const { user, logout, isGuest, isLoading } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Give some time for auth to load, but reduce the time
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   // Log current user state for debugging
   useEffect(() => {
     console.log('ProfilePage - Current user state:', user);
     console.log('ProfilePage - Is guest:', isGuest);
-  }, [user, isGuest]);
+    console.log('ProfilePage - Is loading:', isLoading);
+  }, [user, isGuest, isLoading]);
 
   const handleLogout = () => {
     logout();
@@ -37,14 +28,14 @@ const ProfilePage: React.FC = () => {
     navigate('/app');
   };
 
-  // Show loading state only for a brief moment
+  // Show loading state
   if (isLoading) {
     return (
       <VideoProtection>
         <div className="container mx-auto p-6 max-w-2xl">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
               <p className="text-gray-500">جاري تحميل الملف الشخصي...</p>
             </div>
           </div>
@@ -53,8 +44,8 @@ const ProfilePage: React.FC = () => {
     );
   }
 
-  // Show message if no user is logged in (but not for guests)
-  if (!user || (!isGuest && user.id === 'guest')) {
+  // Show message if no user is logged in
+  if (!user) {
     return (
       <VideoProtection>
         <div className="container mx-auto p-6 max-w-2xl">
@@ -117,7 +108,7 @@ const ProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              {!isGuest && user.id !== 'guest' && (
+              {!isGuest && (
                 <>
                   <div className="flex flex-col space-y-2">
                     <span className="text-sm font-medium text-gray-600">تاريخ الانتهاء:</span>
@@ -158,7 +149,7 @@ const ProfilePage: React.FC = () => {
                 </>
               )}
 
-              {isGuest && user.id === 'guest' && (
+              {isGuest && (
                 <div className="p-3 bg-blue-50 rounded-lg">
                   <p className="text-sm text-blue-700">
                     أنت تتصفح كضيف. بعض المميزات قد تكون محدودة.

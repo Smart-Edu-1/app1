@@ -27,14 +27,16 @@ import NotificationsPage from './NotificationsPage';
 import ProfilePage from './ProfilePage';
 
 const HomePage = () => {
-  const { subjects, loading } = useSupabaseAppData();
-  const { isGuest, isPremiumUser } = useAuth();
+  const { subjects, loading, error } = useSupabaseAppData();
+  const { isGuest, isPremiumUser, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   console.log('🏠 HomePage - البيانات الحالية:', {
     subjects: subjects.length,
     loading,
+    error,
+    authLoading,
     isGuest,
     isPremiumUser,
     subjectsData: subjects
@@ -48,10 +50,37 @@ const HomePage = () => {
     navigate(`/app/subject/${subject.id}/quiz-units`);
   };
 
+  if (authLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p>جارٍ تحميل بيانات المصادقة...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto p-6">
-        <div className="text-center">⏳ جارٍ تحميل البيانات...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p>جارٍ تحميل البيانات...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="text-center text-red-500">
+          <p>حدث خطأ في تحميل البيانات: {error}</p>
+          <Button onClick={() => window.location.reload()} className="mt-4">
+            إعادة التحميل
+          </Button>
+        </div>
       </div>
     );
   }

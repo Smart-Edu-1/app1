@@ -1,4 +1,5 @@
 
+
 // Generate a unique device ID based on various browser characteristics
 export const generateDeviceId = (): string => {
   // Create a unique fingerprint based on browser characteristics
@@ -16,7 +17,7 @@ export const generateDeviceId = (): string => {
     new Date().getTimezoneOffset(),
     canvas.toDataURL(),
     navigator.hardwareConcurrency || 0,
-    navigator.deviceMemory || 0
+    (navigator as any).deviceMemory || 0
   ].join('|');
   
   // Generate a hash of the fingerprint
@@ -54,3 +55,4 @@ export const clearDeviceId = (): void => {
   localStorage.removeItem('device_id');
   console.log('Device ID cleared from localStorage');
 };
+

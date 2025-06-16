@@ -14,13 +14,19 @@ const ProfilePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Give some time for auth to load
+    // Give some time for auth to load, but reduce the time
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1000);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Log current user state for debugging
+  useEffect(() => {
+    console.log('ProfilePage - Current user state:', user);
+    console.log('ProfilePage - Is guest:', isGuest);
+  }, [user, isGuest]);
 
   const handleLogout = () => {
     logout();
@@ -31,7 +37,7 @@ const ProfilePage: React.FC = () => {
     navigate('/app');
   };
 
-  // Show loading state
+  // Show loading state only for a brief moment
   if (isLoading) {
     return (
       <VideoProtection>
@@ -47,8 +53,8 @@ const ProfilePage: React.FC = () => {
     );
   }
 
-  // Show message if no user is logged in
-  if (!user) {
+  // Show message if no user is logged in (but not for guests)
+  if (!user || (!isGuest && user.id === 'guest')) {
     return (
       <VideoProtection>
         <div className="container mx-auto p-6 max-w-2xl">
@@ -111,7 +117,7 @@ const ProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              {!isGuest && (
+              {!isGuest && user.id !== 'guest' && (
                 <>
                   <div className="flex flex-col space-y-2">
                     <span className="text-sm font-medium text-gray-600">تاريخ الانتهاء:</span>
@@ -152,7 +158,7 @@ const ProfilePage: React.FC = () => {
                 </>
               )}
 
-              {isGuest && (
+              {isGuest && user.id === 'guest' && (
                 <div className="p-3 bg-blue-50 rounded-lg">
                   <p className="text-sm text-blue-700">
                     أنت تتصفح كضيف. بعض المميزات قد تكون محدودة.

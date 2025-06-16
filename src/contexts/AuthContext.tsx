@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
@@ -51,10 +50,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const persistedUser = localStorage.getItem('smart_edu_user');
       const deviceId = getDeviceId();
       
+      console.log('Checking persisted login...');
+      console.log('Persisted user:', persistedUser);
+      console.log('Current device ID:', deviceId);
+      
       if (persistedUser) {
         try {
           const userData = JSON.parse(persistedUser);
           console.log('Found persisted user:', userData);
+          
+          // للضيوف - استعادة الحالة مباشرة
+          if (userData.id === 'guest') {
+            setUser(userData);
+            console.log('Guest user state restored from localStorage');
+            return;
+          }
           
           // للمشرفين - لا نحتاج للتحقق من معرف الجهاز
           if (userData.isAdmin) {
@@ -216,6 +226,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isGuest = user?.id === 'guest';
   const isPremiumUser = user ? !isGuest && user.isActive && (!user.expiryDate || new Date(user.expiryDate) > new Date()) : false;
 
+  console.log('AuthContext current state:', { user, isGuest, isPremiumUser });
+
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       console.log('محاولة تسجيل الدخول...', username);
@@ -273,74 +285,93 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
-      // التحقق من حالة تسجيل الخروج للطلاب الذين لديهم معرف جهاز
-      if (profile.device_id && profile.is_logged_out) {
-        toast({
-          title: "يجب تسجيل الخروج أولاً",
-          description: "يجب تسجيل الخروج من الجلسة السابقة قبل تسجيل الدخول مرة أخرى",
-          variant: "destructive"
-        });
-        return false;
+      // للطلاب مع device_id مطابق - دخول مباشر بدون التحقق من is_logged_out
+      if (profile.device_id && profile.device_id === deviceId) {
+        // تحديث حالة تسجيل الخروج إلى false
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ is_logged_out: false })
+          .eq('id', profile.id);
+
+        if (updateError) {
+          console.error('خطأ في تحديث حالة تسجيل الدخول:', updateError);
+          toast({
+            title: "خطأ في تسجيل الدخول",
+            description: "حدث خطأ أثناء تسجيل الدخول",
+            variant: "destructive"
+          });
+          return false;
+        }
+
+        const userData: User = {
+          id: profile.id,
+          username: profile.username,
+          fullName: profile.full_name,
+          isAdmin: profile.is_admin,
+          isActive: profile.is_active,
+          expiryDate: profile.expiry_date,
+          createdAt: profile.created_at,
+          deviceId: profile.device_id,
+          isLoggedOut: false
+        };
+        
+        setUser(userData);
+        localStorage.setItem('smart_edu_user', JSON.stringify(userData));
+        
+        console.log('تم تسجيل دخول الطالب بنجاح');
+        return true;
       }
 
-      // التحقق للطلاب الذين ليس لديهم معرف جهاز
-      if (!profile.device_id && profile.is_logged_out) {
-        toast({
-          title: "يجب تسجيل الخروج أولاً",
-          description: "يجب تسجيل الخروج من الجلسة السابقة قبل تسجيل الدخول مرة أخرى",
-          variant: "destructive"
-        });
-        return false;
-      }
-
-      // تحديث معرف الجهاز وحالة تسجيل الخروج
-      const updateData: any = {
-        is_logged_out: false
-      };
-
-      // إذا لم يكن هناك device_id مخزن، احفظ معرف الجهاز الحالي
+      // للطلاب الذين ليس لديهم معرف جهاز - التحقق من حالة تسجيل الخروج
       if (!profile.device_id) {
-        updateData.device_id = deviceId;
+        if (profile.is_logged_out) {
+          toast({
+            title: "يجب تسجيل الخروج أولاً",
+            description: "يجب تسجيل الخروج من الجلسة السابقة قبل تسجيل الدخول مرة أخرى",
+            variant: "destructive"
+          });
+          return false;
+        }
+
+        // إضافة معرف الجهاز الجديد وتحديث حالة تسجيل الخروج
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ 
+            device_id: deviceId,
+            is_logged_out: false 
+          })
+          .eq('id', profile.id);
+
+        if (updateError) {
+          console.error('خطأ في تحديث معرف الجهاز:', updateError);
+          toast({
+            title: "خطأ في تسجيل الدخول",
+            description: "حدث خطأ أثناء تسجيل الدخول",
+            variant: "destructive"
+          });
+          return false;
+        }
+
+        const userData: User = {
+          id: profile.id,
+          username: profile.username,
+          fullName: profile.full_name,
+          isAdmin: profile.is_admin,
+          isActive: profile.is_active,
+          expiryDate: profile.expiry_date,
+          createdAt: profile.created_at,
+          deviceId: deviceId,
+          isLoggedOut: false
+        };
+        
+        setUser(userData);
+        localStorage.setItem('smart_edu_user', JSON.stringify(userData));
+        
+        console.log('تم تسجيل دخول الطالب بجهاز جديد');
+        return true;
       }
 
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', profile.id);
-
-      if (updateError) {
-        console.error('خطأ في تحديث معرف الجهاز:', updateError);
-        toast({
-          title: "خطأ في تسجيل الدخول",
-          description: "حدث خطأ أثناء تسجيل الدخول",
-          variant: "destructive"
-        });
-        return false;
-      }
-
-      // إنشاء بيانات المستخدم
-      const userData: User = {
-        id: profile.id,
-        username: profile.username,
-        fullName: profile.full_name,
-        isAdmin: profile.is_admin,
-        isActive: profile.is_active,
-        expiryDate: profile.expiry_date,
-        createdAt: profile.created_at,
-        deviceId: updateData.device_id || profile.device_id,
-        isLoggedOut: false
-      };
-      
-      console.log('بيانات المستخدم المسجل:', userData);
-      console.log('هل المستخدم مشرف؟', userData.isAdmin);
-      
-      setUser(userData);
-      
-      // حفظ حالة المستخدم في localStorage للبقاء مسجل الدخول
-      localStorage.setItem('smart_edu_user', JSON.stringify(userData));
-      
-      console.log('تم تسجيل الدخول بنجاح');
-      return true;
+      return false;
     } catch (error: any) {
       console.error('خطأ غير متوقع في تسجيل الدخول:', error);
       toast({
@@ -496,6 +527,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // حفظ حالة الضيف في localStorage
     localStorage.setItem('smart_edu_user', JSON.stringify(guestUser));
+    
+    console.log('Guest user set:', guestUser);
   };
 
   return (

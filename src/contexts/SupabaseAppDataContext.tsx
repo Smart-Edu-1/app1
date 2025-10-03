@@ -13,6 +13,7 @@ interface SupabaseAppDataContextType {
   distributionCenters: any[];
   appSettings: any;
   loading: boolean;
+  error: string | null;
   
   // Functions for subjects
   addSubject: (subject: any) => Promise<void>;
@@ -78,6 +79,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
   const [distributionCenters, setDistributionCenters] = useState<any[]>([]);
   const [appSettings, setAppSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const { toast } = useToast();
 
@@ -258,31 +260,46 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       const transformedUsers = (usersData || []).map(transformUser);
       const transformedNotifications = (notificationsData || []).map(transformNotification);
       const transformedCenters = (centersData || []).map(transformDistributionCenter);
-      const transformedSettings = settingsData ? {
-        appName: settingsData.app_name,
-        aboutText: settingsData.about_text,
-        subscriptionPrices: {
-          monthly: settingsData.monthly_price,
-          quarterly: settingsData.quarterly_price,
-          yearly: settingsData.yearly_price
+      
+      // تحويل الإعدادات من key/value إلى كائن
+      const transformedSettings: any = {};
+      const settingsArray = Array.isArray(settingsData) ? settingsData : (settingsData ? [settingsData] : []);
+      
+      if (settingsArray.length > 0) {
+        settingsArray.forEach((setting: any) => {
+          try {
+            transformedSettings[setting.key] = JSON.parse(setting.value);
+          } catch {
+            transformedSettings[setting.key] = setting.value;
+          }
+        });
+      }
+      
+      const appSettings = {
+        appName: transformedSettings.appName || 'Smart Edu',
+        aboutText: transformedSettings.aboutText || '',
+        subscriptionPrices: transformedSettings.subscriptionPrices || {
+          monthly: '',
+          quarterly: '',
+          yearly: ''
         },
-        themeColors: {
-          primary: settingsData.primary_color,
-          secondary: settingsData.secondary_color,
-          accent: settingsData.accent_color
+        themeColors: transformedSettings.themeColors || {
+          primary: '',
+          secondary: '',
+          accent: ''
         },
-        contactMethods: settingsData.contact_methods || [],
-        subscriptionPlans: settingsData.subscription_plans || [],
-        supportContacts: settingsData.support_contacts || { whatsapp: '', telegram: '', phone: '' },
-        contactPageTitle: settingsData.contact_page_title || 'تواصل معنا',
-        contactPageDescription: settingsData.contact_page_description || 'نحن هنا لمساعدتك في أي وقت',
-        workingHoursTitle: settingsData.working_hours_title || 'أوقات العمل',
-        workingHours: settingsData.working_hours || ['الأحد - الخميس: 9:00 صباحاً - 6:00 مساءً', 'الجمعة - السبت: 10:00 صباحاً - 4:00 مساءً'],
-        adminCredentials: {
-          username: settingsData.admin_username,
-          password: settingsData.admin_password
+        contactMethods: transformedSettings.contactMethods || [],
+        subscriptionPlans: transformedSettings.subscriptionPlans || [],
+        supportContacts: transformedSettings.supportContacts || { whatsapp: '', telegram: '', phone: '' },
+        contactPageTitle: transformedSettings.contactPageTitle || 'تواصل معنا',
+        contactPageDescription: transformedSettings.contactPageDescription || 'نحن هنا لمساعدتك في أي وقت',
+        workingHoursTitle: transformedSettings.workingHoursTitle || 'أوقات العمل',
+        workingHours: transformedSettings.workingHours || ['الأحد - الخميس: 9:00 صباحاً - 6:00 مساءً', 'الجمعة - السبت: 10:00 صباحاً - 4:00 مساءً'],
+        adminCredentials: transformedSettings.adminCredentials || {
+          username: '',
+          password: ''
         }
-      } : {};
+      };
 
       console.log('✅ البيانات المحولة:', {
         subjects: transformedSubjects.length,
@@ -418,13 +435,11 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       const { data, error } = await supabase
         .from('subjects')
         .insert({
-          name: subject.name,
+          title: subject.name || subject.title,
           description: subject.description,
-          icon: subject.icon,
-          color: subject.color,
-          image_url: subject.imageUrl,
-          order_index: subject.order,
-          is_active: subject.isActive
+          image_url: subject.imageUrl || subject.image_url,
+          is_active: subject.isActive !== undefined ? subject.isActive : true,
+          order_index: subject.orderIndex || subject.order || 0
         })
         .select()
         .single();
@@ -492,11 +507,11 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
         .from('units')
         .insert({
           subject_id: unit.subjectId,
-          name: unit.name,
+          title: unit.name || unit.title,
           description: unit.description,
           image_url: unit.imageUrl,
-          order_index: unit.order,
-          is_active: unit.isActive
+          order_index: unit.order || 0,
+          is_active: unit.isActive !== undefined ? unit.isActive : true
         })
         .select()
         .single();
@@ -563,7 +578,8 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
         .from('lessons')
         .insert({
           unit_id: lesson.unitId,
-          title: lesson.name,
+          subject_id: lesson.subjectId,
+          title: lesson.name || lesson.title,
           description: lesson.description,
           content: lesson.content,
           video_url: lesson.videoUrl,
@@ -639,7 +655,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       const { data, error } = await supabase
         .from('quizzes')
         .insert({
-          lesson_id: quiz.lessonId,
+          unit_id: quiz.unitId,
           subject_id: quiz.subjectId,
           title: quiz.title,
           description: quiz.description,
@@ -903,69 +919,40 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       }
 
       if (!existingSettings || existingSettings.length === 0) {
-        console.log('📝 إنشاء إعدادات جديدة...');
-        // If no settings exist, create new ones
-        const { data: newData, error: insertError } = await supabase
+        // إنشاء إعدادات جديدة بتنسيق key/value
+        const settingsToInsert = [
+          { key: 'appName', value: JSON.stringify(settings.appName) },
+          { key: 'aboutText', value: JSON.stringify(settings.aboutText) },
+          { key: 'subscriptionPrices', value: JSON.stringify(settings.subscriptionPrices) },
+          { key: 'themeColors', value: JSON.stringify(settings.themeColors) },
+          { key: 'contactMethods', value: JSON.stringify(settings.contactMethods || []) },
+          { key: 'subscriptionPlans', value: JSON.stringify(settings.subscriptionPlans || []) },
+          { key: 'supportContacts', value: JSON.stringify(settings.supportContacts || {}) },
+          { key: 'contactPageTitle', value: JSON.stringify(settings.contactPageTitle || 'تواصل معنا') },
+          { key: 'contactPageDescription', value: JSON.stringify(settings.contactPageDescription || 'نحن هنا لمساعدتك في أي وقت') },
+          { key: 'workingHoursTitle', value: JSON.stringify(settings.workingHoursTitle || 'أوقات العمل') },
+          { key: 'workingHours', value: JSON.stringify(settings.workingHours || []) },
+          { key: 'adminCredentials', value: JSON.stringify(settings.adminCredentials || {}) }
+        ];
+        
+        const { error: insertError } = await supabase
           .from('app_settings')
-          .insert({
-            app_name: settings.appName,
-            about_text: settings.aboutText,
-            monthly_price: settings.subscriptionPrices?.monthly || 9.99,
-            quarterly_price: settings.subscriptionPrices?.quarterly || 24.99,
-            yearly_price: settings.subscriptionPrices?.yearly || 89.99,
-            primary_color: settings.themeColors?.primary || '#3B82F6',
-            secondary_color: settings.themeColors?.secondary || '#10B981',
-            accent_color: settings.themeColors?.accent || '#F59E0B',
-            contact_methods: settings.contactMethods || [],
-            subscription_plans: settings.subscriptionPlans || [],
-            support_contacts: settings.supportContacts || { whatsapp: '', telegram: '', phone: '' },
-            contact_page_title: settings.contactPageTitle || 'تواصل معنا',
-            contact_page_description: settings.contactPageDescription || 'نحن هنا لمساعدتك في أي وقت',
-            working_hours_title: settings.workingHoursTitle || 'أوقات العمل',
-            working_hours: settings.workingHours || ['الأحد - الخميس: 9:00 صباحاً - 6:00 مساءً', 'الجمعة - السبت: 10:00 صباحاً - 4:00 مساءً'],
-            admin_username: settings.adminCredentials?.username || 'admin',
-            admin_password: settings.adminCredentials?.password || 'admin123'
-          })
-          .select()
-          .single();
+          .insert(settingsToInsert);
         
         if (insertError) {
           console.error('❌ خطأ في إنشاء الإعدادات:', insertError);
           throw insertError;
         }
-        console.log('✅ تم إنشاء الإعدادات:', newData);
+        console.log('✅ تم إنشاء الإعدادات');
       } else {
-        console.log('🔄 تحديث الإعدادات الموجودة...', existingSettings[0].id);
-        // Update existing settings using the first record's ID
-        const { data: updatedData, error: updateError } = await supabase
-          .from('app_settings')
-          .update({
-            app_name: settings.appName,
-            about_text: settings.aboutText,
-            monthly_price: settings.subscriptionPrices?.monthly || 9.99,
-            quarterly_price: settings.subscriptionPrices?.quarterly || 24.99,
-            yearly_price: settings.subscriptionPrices?.yearly || 89.99,
-            primary_color: settings.themeColors?.primary || '#3B82F6',
-            secondary_color: settings.themeColors?.secondary || '#10B981',
-            accent_color: settings.themeColors?.accent || '#F59E0B',
-            contact_methods: settings.contactMethods || [],
-            subscription_plans: settings.subscriptionPlans || [],
-            support_contacts: settings.supportContacts || { whatsapp: '', telegram: '', phone: '' },
-            contact_page_title: settings.contactPageTitle || 'تواصل معنا',
-            contact_page_description: settings.contactPageDescription || 'نحن هنا لمساعدتك في أي وقت',
-            working_hours_title: settings.workingHoursTitle || 'أوقات العمل',
-            working_hours: settings.workingHours || ['الأحد - الخميس: 9:00 صباحاً - 6:00 مساءً', 'الجمعة - السبت: 10:00 صباحاً - 4:00 مساءً'],
-            admin_username: settings.adminCredentials?.username || 'admin',
-            admin_password: settings.adminCredentials?.password || 'admin123'
-          })
-          .eq('id', existingSettings[0].id)
-          .select();
-
-        if (updateError) {
-          console.error('❌ خطأ في تحديث الإعدادات:', updateError);
-          throw updateError;
+        // تحديث الإعدادات الموجودة
+        for (const [key, value] of Object.entries(settings)) {
+          const jsonValue = JSON.stringify(value);
+          await supabase
+            .from('app_settings')
+            .upsert({ key, value: jsonValue }, { onConflict: 'key' });
         }
-        console.log('✅ تم تحديث الإعدادات:', updatedData);
+        console.log('✅ تم تحديث الإعدادات');
       }
       
       console.log('✅ تم تحديث الإعدادات بنجاح');
@@ -1066,6 +1053,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     quizzes,
     codes,
     users,
+    error,
     notifications,
     distributionCenters,
     appSettings,

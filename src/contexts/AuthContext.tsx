@@ -54,92 +54,81 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const persistedUser = localStorage.getItem('smart_edu_user');
       const deviceId = getDeviceId();
       
-      console.log('Checking persisted login...');
-      console.log('Persisted user:', persistedUser);
-      console.log('Current device ID:', deviceId);
-      
       if (persistedUser) {
         try {
           const userData = JSON.parse(persistedUser);
-          console.log('Found persisted user:', userData);
           
           // للضيوف - استعادة الحالة مباشرة
           if (userData.id === 'guest') {
             setUser(userData);
             setIsLoading(false);
-            console.log('Guest user state restored from localStorage');
             return;
           }
           
-          // للمشرفين - لا نحتاج للتحقق من معرف الجهاز أو device_id
-          if (userData.isAdmin) {
-            const { data: profile, error } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', userData.id)
-              .eq('is_active', true)
-              .single();
+          // للمستخدمين المسجلين - التحقق من قاعدة البيانات
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userData.id)
+            .eq('is_active', true)
+            .single();
 
-            if (profile && !error) {
-              const restoredUser: User = {
-                id: profile.id,
-                username: profile.username,
-                fullName: profile.full_name,
-                isAdmin: profile.is_admin,
-                isActive: profile.is_active,
-                expiryDate: profile.expiry_date,
-                createdAt: profile.created_at,
-                deviceId: profile.device_id,
-                isLoggedOut: profile.is_logged_out
-              };
-              
-              setUser(restoredUser);
-              setIsLoading(false);
-              console.log('Admin user state restored successfully');
-              return;
-            }
-          } else {
-            // للطلاب - التحقق من معرف الجهاز وحالة تسجيل الخروج
-            const { data: profile, error } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', userData.id)
-              .eq('is_active', true)
-              .single();
+          if (!profile || error) {
+            localStorage.removeItem('smart_edu_user');
+            setIsLoading(false);
+            return;
+          }
 
-            if (profile && !error) {
-              // التحقق من أن معرف الجهاز موجود ومطابق
-              if (profile.device_id && profile.device_id === deviceId && !profile.is_logged_out) {
-                const restoredUser: User = {
-                  id: profile.id,
-                  username: profile.username,
-                  fullName: profile.full_name,
-                  isAdmin: profile.is_admin,
-                  isActive: profile.is_active,
-                  expiryDate: profile.expiry_date,
-                  createdAt: profile.created_at,
-                  deviceId: profile.device_id,
-                  isLoggedOut: profile.is_logged_out
-                };
-                
-                setUser(restoredUser);
-                setIsLoading(false);
-                console.log('Student user state restored from localStorage');
-                return;
-              } else if (profile.device_id && profile.device_id !== deviceId) {
-                console.log('Device ID mismatch for student, clearing persisted state');
-                localStorage.removeItem('smart_edu_user');
-              } else if (profile.is_logged_out) {
-                console.log('Student was logged out manually, clearing persisted state');
-                localStorage.removeItem('smart_edu_user');
-              }
-            }
+          // التحقق من دور المستخدم
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', profile.id)
+            .single();
+
+          const isAdmin = roleData?.role === 'admin';
+
+          // للمشرفين - السماح بتسجيل الدخول بدون قيود
+          if (isAdmin) {
+            const restoredUser: User = {
+              id: profile.id,
+              username: profile.username,
+              fullName: profile.full_name,
+              isAdmin: true,
+              isActive: profile.is_active,
+              expiryDate: profile.expiry_date,
+              createdAt: profile.created_at,
+              deviceId: profile.device_id,
+              isLoggedOut: false
+            };
+            
+            setUser(restoredUser);
+            setIsLoading(false);
+            return;
+          }
+
+          // للطلاب - التحقق من معرف الجهاز
+          if (profile.device_id && profile.device_id === deviceId && !profile.is_logged_out) {
+            const restoredUser: User = {
+              id: profile.id,
+              username: profile.username,
+              fullName: profile.full_name,
+              isAdmin: false,
+              isActive: profile.is_active,
+              expiryDate: profile.expiry_date,
+              createdAt: profile.created_at,
+              deviceId: profile.device_id,
+              isLoggedOut: false
+            };
+            
+            setUser(restoredUser);
+            setIsLoading(false);
+            return;
           }
           
-          console.log('Profile verification failed, clearing persisted state');
           localStorage.removeItem('smart_edu_user');
         } catch (error) {
-          console.error('Error parsing persisted user:', error);
+          console.error('خطأ في استعادة المستخدم:', error);
           localStorage.removeItem('smart_edu_user');
         }
       }
@@ -203,7 +192,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      console.log('محاولة تسجيل الدخول...', username);
       const deviceId = getDeviceId();
       
       // البحث عن المستخدم في جدول profiles
@@ -216,8 +204,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error || !profile) {
-        console.error('خطأ في تسجيل الدخول:', error);
-        
         toast({
           title: "خطأ في تسجيل الدخول",
           description: "اسم المستخدم أو كلمة المرور غير صحيحة",
@@ -226,13 +212,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
+      // التحقق من دور المستخدم
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', profile.id)
+        .single();
+
+      const isAdmin = roleData?.role === 'admin';
+
       // للمشرفين - السماح بتسجيل الدخول من أي جهاز بدون أي قيود
-      if (profile.is_admin) {
+      if (isAdmin) {
         const userData: User = {
           id: profile.id,
           username: profile.username,
           fullName: profile.full_name,
-          isAdmin: profile.is_admin,
+          isAdmin: true,
           isActive: profile.is_active,
           expiryDate: profile.expiry_date,
           createdAt: profile.created_at,
@@ -242,8 +237,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setUser(userData);
         localStorage.setItem('smart_edu_user', JSON.stringify(userData));
-        
-        console.log('تم تسجيل دخول المشرف بنجاح');
         return true;
       }
 
@@ -280,7 +273,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: profile.id,
           username: profile.username,
           fullName: profile.full_name,
-          isAdmin: profile.is_admin,
+          isAdmin: false,
           isActive: profile.is_active,
           expiryDate: profile.expiry_date,
           createdAt: profile.created_at,
@@ -290,8 +283,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setUser(userData);
         localStorage.setItem('smart_edu_user', JSON.stringify(userData));
-        
-        console.log('تم تسجيل دخول الطالب بنجاح');
         return true;
       }
 
@@ -329,7 +320,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: profile.id,
           username: profile.username,
           fullName: profile.full_name,
-          isAdmin: profile.is_admin,
+          isAdmin: false,
           isActive: profile.is_active,
           expiryDate: profile.expiry_date,
           createdAt: profile.created_at,
@@ -339,8 +330,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setUser(userData);
         localStorage.setItem('smart_edu_user', JSON.stringify(userData));
-        
-        console.log('تم تسجيل دخول الطالب بجهاز جديد');
         return true;
       }
 
@@ -436,13 +425,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: newProfile.id,
         username: newProfile.username,
         fullName: newProfile.full_name,
-        isAdmin: newProfile.is_admin,
+        isAdmin: false,
         isActive: newProfile.is_active,
         expiryDate: newProfile.expiry_date,
         createdAt: newProfile.created_at,
         deviceId: newProfile.device_id,
         isLoggedOut: false
       };
+
+      // إضافة دور الطالب
+      await supabase
+        .from('user_roles')
+        .insert({
+          user_id: newProfile.id,
+          role: 'student'
+        });
       
       setUser(userData);
       

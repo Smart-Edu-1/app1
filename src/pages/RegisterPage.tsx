@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { BookOpen, ArrowLeft, Eye, EyeOff } from 'lucide-react';
@@ -15,7 +15,9 @@ const RegisterPage = () => {
     username: '',
     password: '',
     confirmPassword: '',
-    activationCode: ''
+    activationCode: '',
+    governorate: '',
+    studentPhone: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -25,10 +27,33 @@ const RegisterPage = () => {
   const { register } = useAuth();
   const { toast } = useToast();
 
+  const syrianGovernorates = [
+    'دمشق',
+    'ريف دمشق',
+    'حلب',
+    'حمص',
+    'حماة',
+    'اللاذقية',
+    'طرطوس',
+    'درعا',
+    'السويداء',
+    'الحسكة',
+    'دير الزور',
+    'الرقة',
+    'القنيطرة'
+  ];
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
+    }));
+  };
+
+  const handleGovernorateChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      governorate: value
     }));
   };
 
@@ -55,6 +80,17 @@ const RegisterPage = () => {
       return;
     }
 
+    // التحقق من أن اسم المستخدم بالإنكليزية
+    const englishOnly = /^[a-zA-Z0-9_]+$/;
+    if (!englishOnly.test(formData.username)) {
+      toast({
+        title: "اسم مستخدم غير صحيح",
+        description: "يجب أن يحتوي اسم المستخدم على حروف إنكليزية وأرقام فقط",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -62,7 +98,9 @@ const RegisterPage = () => {
         formData.fullName,
         formData.username,
         formData.password,
-        formData.activationCode
+        formData.activationCode,
+        formData.governorate || undefined,
+        formData.studentPhone || undefined
       );
 
       if (success) {
@@ -102,6 +140,35 @@ const RegisterPage = () => {
                 className="mt-1"
                 placeholder="أدخل اسمك الثلاثي"
                 required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="governorate">المحافظة (اختياري)</Label>
+              <Select value={formData.governorate} onValueChange={handleGovernorateChange}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="اختر المحافظة" />
+                </SelectTrigger>
+                <SelectContent>
+                  {syrianGovernorates.map((gov) => (
+                    <SelectItem key={gov} value={gov}>
+                      {gov}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="studentPhone">رقم الطالب (اختياري)</Label>
+              <Input
+                id="studentPhone"
+                name="studentPhone"
+                type="tel"
+                value={formData.studentPhone}
+                onChange={handleInputChange}
+                className="mt-1"
+                placeholder="أدخل رقم الهاتف"
               />
             </div>
             
@@ -170,7 +237,7 @@ const RegisterPage = () => {
             </div>
             
             <div>
-              <Label htmlFor="activationCode">كود التفعيل</Label>
+              <Label htmlFor="activationCode">كود التفعيل (اختياري)</Label>
               <Input
                 id="activationCode"
                 name="activationCode"
@@ -178,9 +245,11 @@ const RegisterPage = () => {
                 value={formData.activationCode}
                 onChange={handleInputChange}
                 className="mt-1"
-                placeholder="أدخل كود التفعيل"
-                required
+                placeholder="أدخل كود التفعيل أو اتركه فارغاً"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                يمكنك إضافة كود التفعيل لاحقاً من صفحة تفعيل المواد
+              </p>
             </div>
             
             <Button 

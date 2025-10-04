@@ -8,6 +8,8 @@ import LoginPage from "./pages/LoginPage";
 import MainApp from "./pages/MainApp";
 import AdminPanel from "./pages/AdminPanel";
 import RegisterPage from "./pages/RegisterPage";
+import ActivateSubjectPage from "./pages/ActivateSubjectPage";
+import TransferRequestPage from "./pages/TransferRequestPage";
 import NotFound from "./pages/NotFound";
 
 const App: React.FC = () => {
@@ -27,6 +29,8 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/activate" element={<ActivateSubjectPage />} />
+          <Route path="/transfer-request" element={<TransferRequestPage />} />
           <Route path="/app/*" element={<MainApp />} />
           <Route path="/admin/*" element={<AdminPanel />} />
           <Route path="*" element={<NotFound />} />

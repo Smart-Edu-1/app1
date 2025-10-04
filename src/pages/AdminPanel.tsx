@@ -17,6 +17,7 @@ import QuizManagement from '@/components/admin/QuizManagement';
 import NotificationManagement from '@/components/admin/NotificationManagement';
 import AdminSettings from '@/components/admin/AdminSettings';
 import DistributionCenterManagement from '@/components/admin/DistributionCenterManagement';
+import TransferRequestManagement from '@/components/admin/TransferRequestManagement';
 
 const AdminDashboard = () => {
   const { subjects, codes, units, lessons, quizzes, distributionCenters } = useSupabaseAppData();
@@ -103,6 +104,7 @@ const AdminSidebar = () => {
   const sidebarItems = [
     { path: '/admin', label: 'الرئيسية', icon: <BarChart3 className="h-5 w-5" /> },
     { path: '/admin/users', label: 'إدارة المستخدمين', icon: <Users className="h-5 w-5" /> },
+    { path: '/admin/transfer-requests', label: 'طلبات نقل الحساب', icon: <FileText className="h-5 w-5" /> },
     { path: '/admin/subjects', label: 'إدارة المواد', icon: <BookOpen className="h-5 w-5" /> },
     { path: '/admin/units', label: 'إدارة الوحدات', icon: <Layers className="h-5 w-5" /> },
     { path: '/admin/lessons', label: 'إدارة الدروس', icon: <Play className="h-5 w-5" /> },
@@ -184,6 +186,7 @@ const AdminPanel: React.FC = () => {
           <Routes>
             <Route path="/" element={<AdminDashboard />} />
             <Route path="/users" element={<UserManagement />} />
+            <Route path="/transfer-requests" element={<TransferRequestManagement />} />
             <Route path="/subjects" element={<SubjectManagement />} />
             <Route path="/units" element={<UnitManagement />} />
             <Route path="/lessons" element={<LessonManagement />} />

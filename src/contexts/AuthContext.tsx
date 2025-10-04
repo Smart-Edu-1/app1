@@ -15,30 +15,34 @@ interface User {
   createdAt: string;
   deviceId?: string;
   isLoggedOut?: boolean;
+  governorate?: string;
+  studentPhone?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  login: (username: string, password: string) => Promise<boolean>;
-  register: (fullName: string, username: string, password: string, activationCode: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<{ success: boolean; requiresTransfer?: boolean; message?: string }>;
+  register: (fullName: string, username: string, password: string, activationCode: string, governorate?: string, studentPhone?: string) => Promise<boolean>;
   logout: () => void;
   enterAsGuest: () => void;
   isGuest: boolean;
   isPremiumUser: boolean;
   isLoading: boolean;
+  activateSubject: (activationCode: string) => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
-  login: async () => false,
+  login: async () => ({ success: false }),
   register: async () => false,
   logout: () => {},
   enterAsGuest: () => {},
   isGuest: false,
   isPremiumUser: false,
-  isLoading: true
+  isLoading: true,
+  activateSubject: async () => ({ success: false, message: '' })
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -190,9 +194,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   console.log('AuthContext current state:', { user, isGuest, isPremiumUser, isLoading });
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<{ success: boolean; requiresTransfer?: boolean; message?: string }> => {
     try {
       const deviceId = getDeviceId();
+      console.log('محاولة تسجيل الدخول:', { username, deviceId });
       
       // البحث عن المستخدم في جدول profiles
       const { data: profile, error } = await supabase
@@ -209,7 +214,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: "اسم المستخدم أو كلمة المرور غير صحيحة",
           variant: "destructive"
         });
-        return false;
+        return { success: false };
       }
 
       // التحقق من دور المستخدم
@@ -232,23 +237,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           expiryDate: profile.expiry_date,
           createdAt: profile.created_at,
           deviceId: profile.device_id,
-          isLoggedOut: false
+          isLoggedOut: false,
+          governorate: profile.governorate,
+          studentPhone: profile.student_phone
         };
         
         setUser(userData);
         localStorage.setItem('smart_edu_user', JSON.stringify(userData));
-        return true;
+        return { success: true };
       }
 
       // للطلاب - التحقق من معرف الجهاز
       if (profile.device_id && profile.device_id !== deviceId) {
         console.log('Device ID mismatch:', { stored: profile.device_id, current: deviceId });
-        toast({
-          title: "جهاز غير مسموح",
-          description: "تواصل مع الدعم لحل المشكلة",
-          variant: "destructive"
-        });
-        return false;
+        return { 
+          success: false, 
+          requiresTransfer: true, 
+          message: "لا يمكن الدخول من جهاز آخر. يمكنك نقل الحساب عبر الدعم." 
+        };
       }
 
       // للطلاب مع device_id مطابق - دخول مباشر بدون التحقق من is_logged_out
@@ -266,7 +272,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             description: "حدث خطأ أثناء تسجيل الدخول",
             variant: "destructive"
           });
-          return false;
+          return { success: false };
         }
 
         const userData: User = {
@@ -278,12 +284,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           expiryDate: profile.expiry_date,
           createdAt: profile.created_at,
           deviceId: profile.device_id,
-          isLoggedOut: false
+          isLoggedOut: false,
+          governorate: profile.governorate,
+          studentPhone: profile.student_phone
         };
         
         setUser(userData);
         localStorage.setItem('smart_edu_user', JSON.stringify(userData));
-        return true;
+        return { success: true };
       }
 
       // للطلاب الذين ليس لديهم معرف جهاز - التحقق من حالة تسجيل الخروج
@@ -294,7 +302,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             description: "يجب تسجيل الخروج من الجلسة السابقة قبل تسجيل الدخول مرة أخرى",
             variant: "destructive"
           });
-          return false;
+          return { success: false };
         }
 
         // إضافة معرف الجهاز الجديد وتحديث حالة تسجيل الخروج
@@ -313,7 +321,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             description: "حدث خطأ أثناء تسجيل الدخول",
             variant: "destructive"
           });
-          return false;
+          return { success: false };
         }
 
         const userData: User = {
@@ -325,15 +333,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           expiryDate: profile.expiry_date,
           createdAt: profile.created_at,
           deviceId: deviceId,
-          isLoggedOut: false
+          isLoggedOut: false,
+          governorate: profile.governorate,
+          studentPhone: profile.student_phone
         };
         
         setUser(userData);
         localStorage.setItem('smart_edu_user', JSON.stringify(userData));
-        return true;
+        return { success: true };
       }
 
-      return false;
+      return { success: false };
     } catch (error: any) {
       console.error('خطأ غير متوقع في تسجيل الدخول:', error);
       toast({
@@ -341,32 +351,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "حدث خطأ غير متوقع",
         variant: "destructive"
       });
-      return false;
+      return { success: false };
     }
   };
 
-  const register = async (fullName: string, username: string, password: string, activationCode: string): Promise<boolean> => {
+  const register = async (fullName: string, username: string, password: string, activationCode: string, governorate?: string, studentPhone?: string): Promise<boolean> => {
     try {
-      console.log('محاولة التحقق من كود التفعيل:', activationCode);
+      console.log('محاولة إنشاء حساب جديد');
       const deviceId = getDeviceId();
       
-      // التحقق من وجود كود التفعيل
-      const { data: codeData, error: codeError } = await supabase
-        .from('activation_codes')
-        .select('*')
-        .eq('code', activationCode)
-        .eq('is_used', false)
-        .single();
-
-      if (codeError || !codeData) {
-        toast({
-          title: "كود تفعيل غير صحيح",
-          description: "كود التفعيل غير موجود أو مستخدم بالفعل",
-          variant: "destructive"
-        });
-        return false;
-      }
-
       // التحقق من عدم وجود اسم المستخدم مسبقاً
       const { data: existingUser } = await supabase
         .from('profiles')
@@ -383,7 +376,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
-      // إنشاء تاريخ انتهاء الصلاحية
+      // إنشاء تاريخ انتهاء الصلاحية (سنة من الآن)
       const expiryDate = new Date();
       expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
@@ -395,11 +388,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           username: username,
           password: password,
           is_active: true,
-          is_admin: false,
           expiry_date: expiryDate.toISOString(),
-          activation_code: activationCode,
+          activation_code: activationCode || null,
           device_id: deviceId,
-          is_logged_out: false
+          is_logged_out: false,
+          governorate: governorate || null,
+          student_phone: studentPhone || null
         })
         .select()
         .single();
@@ -414,12 +408,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
-      // تحديث كود التفعيل كمستخدم
-      await supabase
-        .from('activation_codes')
-        .update({ is_used: true })
-        .eq('id', codeData.id);
-
       // إنشاء بيانات المستخدم الجديد
       const userData: User = {
         id: newProfile.id,
@@ -430,7 +418,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         expiryDate: newProfile.expiry_date,
         createdAt: newProfile.created_at,
         deviceId: newProfile.device_id,
-        isLoggedOut: false
+        isLoggedOut: false,
+        governorate: newProfile.governorate,
+        studentPhone: newProfile.student_phone
       };
 
       // إضافة دور الطالب
@@ -440,6 +430,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           user_id: newProfile.id,
           role: 'student'
         });
+      
+      // إذا كان هناك كود تفعيل، نقوم بتفعيله
+      if (activationCode) {
+        await activateSubject(activationCode);
+      }
       
       setUser(userData);
       
@@ -464,6 +459,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    console.log('بدء تسجيل الخروج للمستخدم:', user);
+    
     if (user && user.id !== 'guest') {
       // تحديث حالة تسجيل الخروج في قاعدة البيانات (للطلاب فقط)
       if (!user.isAdmin) {
@@ -485,6 +482,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const enterAsGuest = () => {
+    console.log('الدخول كضيف...');
     const guestUser: User = {
       id: 'guest',
       username: 'guest',
@@ -498,7 +496,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // حفظ حالة الضيف في localStorage
     localStorage.setItem('smart_edu_user', JSON.stringify(guestUser));
     
-    console.log('Guest user set:', guestUser);
+    console.log('تم الدخول كضيف:', guestUser);
+  };
+
+  const activateSubject = async (activationCode: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      if (!user || user.id === 'guest') {
+        return { success: false, message: 'يجب تسجيل الدخول أولاً' };
+      }
+
+      // التحقق من وجود كود التفعيل
+      const { data: codeData, error: codeError } = await supabase
+        .from('activation_codes')
+        .select('*')
+        .eq('code', activationCode)
+        .eq('is_used', false)
+        .single();
+
+      if (codeError || !codeData) {
+        return { success: false, message: 'كود تفعيل غير صحيح أو مستخدم بالفعل' };
+      }
+
+      // تحديث حالة الكود
+      await supabase
+        .from('activation_codes')
+        .update({ 
+          is_used: true, 
+          used_by: user.id,
+          used_at: new Date().toISOString()
+        })
+        .eq('id', codeData.id);
+
+      // إذا كان كود تفعيل كامل المنهاج
+      if (codeData.is_full_curriculum) {
+        // الحصول على جميع المواد
+        const { data: subjects } = await supabase
+          .from('subjects')
+          .select('id');
+
+        if (subjects) {
+          // تفعيل جميع المواد
+          for (const subject of subjects) {
+            await supabase
+              .from('student_subjects')
+              .upsert({
+                student_id: user.id,
+                subject_id: subject.id,
+                activation_code: activationCode
+              });
+          }
+        }
+
+        return { success: true, message: 'تم تفعيل جميع المواد بنجاح!' };
+      }
+
+      // تفعيل مادة واحدة
+      if (codeData.subject_id) {
+        await supabase
+          .from('student_subjects')
+          .upsert({
+            student_id: user.id,
+            subject_id: codeData.subject_id,
+            activation_code: activationCode
+          });
+
+        return { success: true, message: 'تم تفعيل المادة بنجاح!' };
+      }
+
+      return { success: false, message: 'كود التفعيل غير صالح' };
+    } catch (error) {
+      console.error('خطأ في تفعيل المادة:', error);
+      return { success: false, message: 'حدث خطأ أثناء التفعيل' };
+    }
   };
 
   return (
@@ -511,7 +580,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       enterAsGuest,
       isGuest,
       isPremiumUser,
-      isLoading
+      isLoading,
+      activateSubject
     }}>
       {children}
     </AuthContext.Provider>

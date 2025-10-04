@@ -10,7 +10,7 @@ import { Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/layout/Header';
-import AboutPage from './AboutPage';
+import ActivateSubjectPage from './ActivateSubjectPage';
 import ContactPage from './ContactPage';
 import PricingPage from './PricingPage';
 import DistributionCentersPage from './DistributionCentersPage';
@@ -149,6 +149,7 @@ const MainApp: React.FC = () => {
         <main>
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/activate" element={<ActivateSubjectPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/pricing" element={<PricingPage />} />

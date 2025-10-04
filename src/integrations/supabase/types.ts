@@ -19,21 +19,48 @@ export type Database = {
           code: string
           created_at: string | null
           id: string
+          is_full_curriculum: boolean | null
           is_used: boolean | null
+          subject_id: string | null
+          used_at: string | null
+          used_by: string | null
         }
         Insert: {
           code: string
           created_at?: string | null
           id?: string
+          is_full_curriculum?: boolean | null
           is_used?: boolean | null
+          subject_id?: string | null
+          used_at?: string | null
+          used_by?: string | null
         }
         Update: {
           code?: string
           created_at?: string | null
           id?: string
+          is_full_curriculum?: boolean | null
           is_used?: boolean | null
+          subject_id?: string | null
+          used_at?: string | null
+          used_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "activation_codes_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activation_codes_used_by_fkey"
+            columns: ["used_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       app_settings: {
         Row: {
@@ -188,10 +215,12 @@ export type Database = {
           device_id: string | null
           expiry_date: string | null
           full_name: string
+          governorate: string | null
           id: string
           is_active: boolean | null
           is_logged_out: boolean | null
           password: string
+          student_phone: string | null
           username: string
         }
         Insert: {
@@ -200,10 +229,12 @@ export type Database = {
           device_id?: string | null
           expiry_date?: string | null
           full_name: string
+          governorate?: string | null
           id?: string
           is_active?: boolean | null
           is_logged_out?: boolean | null
           password: string
+          student_phone?: string | null
           username: string
         }
         Update: {
@@ -212,10 +243,12 @@ export type Database = {
           device_id?: string | null
           expiry_date?: string | null
           full_name?: string
+          governorate?: string | null
           id?: string
           is_active?: boolean | null
           is_logged_out?: boolean | null
           password?: string
+          student_phone?: string | null
           username?: string
         }
         Relationships: []
@@ -268,6 +301,45 @@ export type Database = {
           },
         ]
       }
+      student_subjects: {
+        Row: {
+          activated_at: string | null
+          activation_code: string | null
+          id: string
+          student_id: string
+          subject_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          activation_code?: string | null
+          id?: string
+          student_id: string
+          subject_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          activation_code?: string | null
+          id?: string
+          student_id?: string
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_subjects_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_subjects_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subjects: {
         Row: {
           created_at: string | null
@@ -297,6 +369,47 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      transfer_requests: {
+        Row: {
+          id: string
+          note: string | null
+          password: string
+          requested_at: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          username: string
+        }
+        Insert: {
+          id?: string
+          note?: string | null
+          password: string
+          requested_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          username: string
+        }
+        Update: {
+          id?: string
+          note?: string | null
+          password?: string
+          requested_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transfer_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       units: {
         Row: {

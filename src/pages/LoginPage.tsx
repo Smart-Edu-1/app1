@@ -40,14 +40,25 @@ const LoginPage = () => {
 
     try {
       console.log('محاولة تسجيل الدخول:', { username, password });
-      const success = await login(username, password);
+      const result = await login(username, password);
       
-      if (success) {
+      if (result.success) {
         toast({
           title: "تم تسجيل الدخول بنجاح",
           description: `مرحباً بك`
         });
         // التوجيه سيتم من useEffect عند تغيير user
+      } else if (result.requiresTransfer) {
+        toast({
+          title: "جهاز غير مسموح",
+          description: result.message || "لا يمكن الدخول من جهاز آخر",
+          variant: "destructive",
+          action: (
+            <Button variant="outline" onClick={() => navigate('/transfer-request')}>
+              معرفة المزيد
+            </Button>
+          )
+        });
       }
     } catch (error) {
       console.error('خطأ في تسجيل الدخول:', error);
@@ -57,12 +68,13 @@ const LoginPage = () => {
   };
 
   const handleGuestAccess = () => {
+    console.log('محاولة الدخول كضيف');
     enterAsGuest();
-    navigate('/app');
     toast({
       title: "تم الدخول كضيف",
       description: "يمكنك تصفح المحتوى المجاني فقط"
     });
+    navigate('/app');
   };
 
   const handleRegister = () => {

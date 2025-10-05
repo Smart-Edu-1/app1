@@ -226,15 +226,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const isAdmin = roleData?.role === 'admin';
 
-      // محاولة تسجيل الدخول عبر Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: `${username}@smartedu.local`,
-        password: password
-      });
-
-      if (authError) {
-        console.log('لا يوجد حساب Auth، سيتم إنشاؤه');
-      }
+      // لا نستخدم Supabase Auth للطلاب - نستخدم نظام مخصص
 
       // للمشرفين - السماح بتسجيل الدخول من أي جهاز بدون أي قيود
       if (isAdmin) {
@@ -396,55 +388,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const expiryDate = new Date();
       expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
-      // إنشاء المستخدم في Supabase Auth أولاً
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: `${username}@smartedu.local`,
-        password: password,
-        options: {
-          data: {
-            username: username,
-            full_name: fullName,
-            password: password,
-            governorate: governorate,
-            student_phone: studentPhone,
-            activation_code: activationCode,
-            expiry_date: expiryDate.toISOString(),
-            device_id: deviceId,
-            is_logged_out: false
-          },
-          emailRedirectTo: `${window.location.origin}/`
-        }
-      });
-
-      if (authError || !authData.user) {
-        console.error('خطأ في إنشاء المستخدم في Auth:', authError);
-        toast({
-          title: "خطأ في إنشاء الحساب",
-          description: authError?.message || "حدث خطأ أثناء إنشاء الحساب",
-          variant: "destructive"
-        });
-        return false;
-      }
-
-      // انتظار قليلاً لإتمام trigger
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // قراءة البيانات من profiles
-      const { data: newProfile, error: profileError } = await supabase
+      // إنشاء المستخدم مباشرة في profiles بدون Supabase Auth
+      const { data: newProfile, error: insertError } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('id', authData.user.id)
+        .insert({
+          username: username,
+          full_name: fullName,
+          password: password,
+          governorate: governorate,
+          student_phone: studentPhone,
+          activation_code: activationCode,
+          expiry_date: expiryDate.toISOString(),
+          device_id: deviceId,
+          is_active: true,
+          is_logged_out: false
+        })
+        .select()
         .single();
 
-      if (profileError || !newProfile) {
-        console.error('خطأ في قراءة Profile:', profileError);
+      if (insertError || !newProfile) {
+        console.error('خطأ في إنشاء الحساب:', insertError);
         toast({
           title: "خطأ في إنشاء الحساب",
-          description: "حدث خطأ أثناء إنشاء الحساب",
+          description: insertError?.message || "حدث خطأ أثناء إنشاء الحساب",
           variant: "destructive"
         });
         return false;
       }
+
+      // إنشاء دور الطالب
+      await supabase
+        .from('user_roles')
+        .insert({
+          user_id: newProfile.id,
+          role: 'student'
+        });
 
       const userData: User = {
         id: newProfile.id,

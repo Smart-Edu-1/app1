@@ -164,16 +164,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     try {
       console.log('🔄 بدء تحميل البيانات من Supabase...');
       
-      // اختبار الاتصال أولاً
-      console.log('🧪 اختبار الاتصال مع Supabase...');
-      const testResponse = await fetch('https://nmzqqgcbfhvajzqyrequ.supabase.co/rest/v1/subjects?select=count', {
-        headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tenFxZ2NiZmh2YWp6cXlyZXF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5MDc5MDAsImV4cCI6MjA2NTQ4MzkwMH0.tIlI6hdFqCdvfOGojAOhfgAbhnFWil4EbR8-MZLkPOA',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tenFxZ2NiZmh2YWp6cXlyZXF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5MDc5MDAsImV4cCI6MjA2NTQ4MzkwMH0.tIlI6hdFqCdvfOGojAOhfgAbhnFWil4EbR8-MZLkPOA',
-          'Content-Type': 'application/json'
-        }
-      });
-      console.log('🧪 نتيجة اختبار الاتصال:', testResponse.status, testResponse.statusText);
+      console.log('🔄 تحميل البيانات من Supabase...');
       
       // Load subjects
       const { data: subjectsData, error: subjectsError } = await supabase

@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import ActivateSubjectPage from './ActivateSubjectPage';
+import AboutPage from './AboutPage';
 import ContactPage from './ContactPage';
 import PricingPage from './PricingPage';
 import DistributionCentersPage from './DistributionCentersPage';

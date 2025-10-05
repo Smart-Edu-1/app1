@@ -475,8 +475,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setSession(null);
     
-    // مسح البيانات المحفوظة
+    // مسح جميع البيانات المحفوظة (بما في ذلك للضيوف)
     localStorage.removeItem('smart_edu_user');
+    
+    toast({
+      title: "تم تسجيل الخروج",
+      description: "تم تسجيل الخروج بنجاح",
+    });
     
     console.log('تم تسجيل الخروج وتحديث حالة قاعدة البيانات');
   };

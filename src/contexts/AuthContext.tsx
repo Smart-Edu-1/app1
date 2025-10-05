@@ -226,6 +226,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const isAdmin = roleData?.role === 'admin';
 
+      // محاولة تسجيل الدخول عبر Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: `${username}@smartedu.local`,
+        password: password
+      });
+
+      if (authError) {
+        console.log('لا يوجد حساب Auth، سيتم إنشاؤه');
+      }
+
       // للمشرفين - السماح بتسجيل الدخول من أي جهاز بدون أي قيود
       if (isAdmin) {
         const userData: User = {
@@ -244,6 +254,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setUser(userData);
         localStorage.setItem('smart_edu_user', JSON.stringify(userData));
+        
+        toast({
+          title: "مرحباً",
+          description: `مرحباً ${profile.full_name}`
+        });
+        
         return { success: true };
       }
 
@@ -257,7 +273,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       }
 
-      // للطلاب مع device_id مطابق - دخول مباشر بدون التحقق من is_logged_out
+      // للطلاب مع device_id مطابق - دخول مباشر
       if (profile.device_id && profile.device_id === deviceId) {
         // تحديث حالة تسجيل الخروج إلى false
         const { error: updateError } = await supabase
@@ -267,12 +283,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (updateError) {
           console.error('خطأ في تحديث حالة تسجيل الدخول:', updateError);
-          toast({
-            title: "خطأ في تسجيل الدخول",
-            description: "حدث خطأ أثناء تسجيل الدخول",
-            variant: "destructive"
-          });
-          return { success: false };
         }
 
         const userData: User = {
@@ -291,10 +301,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setUser(userData);
         localStorage.setItem('smart_edu_user', JSON.stringify(userData));
+        
+        toast({
+          title: "مرحباً",
+          description: `مرحباً ${profile.full_name}`
+        });
+        
         return { success: true };
       }
 
-      // للطلاب الذين ليس لديهم معرف جهاز - التحقق من حالة تسجيل الخروج
+      // للطلاب الذين ليس لديهم معرف جهاز
       if (!profile.device_id) {
         if (profile.is_logged_out) {
           toast({
@@ -305,7 +321,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return { success: false };
         }
 
-        // إضافة معرف الجهاز الجديد وتحديث حالة تسجيل الخروج
+        // إضافة معرف الجهاز الجديد
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ 
@@ -316,12 +332,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (updateError) {
           console.error('خطأ في تحديث معرف الجهاز:', updateError);
-          toast({
-            title: "خطأ في تسجيل الدخول",
-            description: "حدث خطأ أثناء تسجيل الدخول",
-            variant: "destructive"
-          });
-          return { success: false };
         }
 
         const userData: User = {
@@ -340,6 +350,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setUser(userData);
         localStorage.setItem('smart_edu_user', JSON.stringify(userData));
+        
+        toast({
+          title: "مرحباً",
+          description: `مرحباً ${profile.full_name}`
+        });
+        
         return { success: true };
       }
 
@@ -365,7 +381,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('profiles')
         .select('username')
         .eq('username', username)
-        .single();
+        .maybeSingle();
 
       if (existingUser) {
         toast({
@@ -380,26 +396,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const expiryDate = new Date();
       expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
-      // إنشاء المستخدم في جدول profiles مباشرة مع معرف الجهاز
+      // إنشاء المستخدم في Supabase Auth أولاً
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: `${username}@smartedu.local`,
+        password: password,
+        options: {
+          data: {
+            username: username,
+            full_name: fullName,
+            password: password,
+            governorate: governorate,
+            student_phone: studentPhone,
+            activation_code: activationCode,
+            expiry_date: expiryDate.toISOString(),
+            device_id: deviceId,
+            is_logged_out: false
+          },
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (authError || !authData.user) {
+        console.error('خطأ في إنشاء المستخدم في Auth:', authError);
+        toast({
+          title: "خطأ في إنشاء الحساب",
+          description: authError?.message || "حدث خطأ أثناء إنشاء الحساب",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // انتظار قليلاً لإتمام trigger
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // قراءة البيانات من profiles
       const { data: newProfile, error: profileError } = await supabase
         .from('profiles')
-        .insert({
-          full_name: fullName,
-          username: username,
-          password: password,
-          is_active: true,
-          expiry_date: expiryDate.toISOString(),
-          activation_code: activationCode || null,
-          device_id: deviceId,
-          is_logged_out: false,
-          governorate: governorate || null,
-          student_phone: studentPhone || null
-        })
-        .select()
+        .select('*')
+        .eq('id', authData.user.id)
         .single();
 
-      if (profileError) {
-        console.error('خطأ في إنشاء الحساب:', profileError);
+      if (profileError || !newProfile) {
+        console.error('خطأ في قراءة Profile:', profileError);
         toast({
           title: "خطأ في إنشاء الحساب",
           description: "حدث خطأ أثناء إنشاء الحساب",
@@ -408,7 +446,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
-      // إنشاء بيانات المستخدم الجديد
       const userData: User = {
         id: newProfile.id,
         username: newProfile.username,
@@ -422,14 +459,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         governorate: newProfile.governorate,
         studentPhone: newProfile.student_phone
       };
-
-      // إضافة دور الطالب
-      await supabase
-        .from('user_roles')
-        .insert({
-          user_id: newProfile.id,
-          role: 'student'
-        });
       
       // إذا كان هناك كود تفعيل، نقوم بتفعيله
       if (activationCode) {
@@ -437,8 +466,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       setUser(userData);
-      
-      // حفظ حالة المستخدم في localStorage للبقاء مسجل الدخول
       localStorage.setItem('smart_edu_user', JSON.stringify(userData));
       
       toast({
@@ -498,8 +525,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     setUser(guestUser);
     
-    // حفظ حالة الضيف في localStorage
-    localStorage.setItem('smart_edu_user', JSON.stringify(guestUser));
+    // لا نحفظ حالة الضيف في localStorage لأنها مؤقتة فقط
+    // localStorage.setItem('smart_edu_user', JSON.stringify(guestUser));
     
     console.log('تم الدخول كضيف:', guestUser);
   };

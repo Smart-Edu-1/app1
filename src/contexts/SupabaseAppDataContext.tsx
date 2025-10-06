@@ -270,7 +270,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       }
       
       const finalAppSettings = {
-        appName: transformedSettings.appName || 'Smart Edu',
+        appName: transformedSettings.appName || 'المنصة التعليمية',
         aboutText: transformedSettings.aboutText || '',
         subscriptionPrices: transformedSettings.subscriptionPrices || {
           monthly: '',
@@ -452,20 +452,38 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
 
   const updateSubject = async (id: string, subject: any) => {
     try {
+      console.log('🔄 تحديث المادة:', { id, subject });
+      const updateData: any = {
+        title: subject.name || subject.title,
+        description: subject.description
+      };
+      
+      // Only include fields that exist
+      if (subject.imageUrl !== undefined) updateData.image_url = subject.imageUrl;
+      if (subject.order !== undefined) updateData.order_index = subject.order;
+      if (subject.isActive !== undefined) updateData.is_active = subject.isActive;
+      if (subject.icon !== undefined) updateData.icon = subject.icon;
+      if (subject.color !== undefined) updateData.color = subject.color;
+      if (subject.teacher_phone !== undefined) updateData.teacher_phone = subject.teacher_phone;
+      if (subject.teacher_email !== undefined) updateData.teacher_email = subject.teacher_email;
+      if (subject.teacher_whatsapp !== undefined) updateData.teacher_whatsapp = subject.teacher_whatsapp;
+
+      console.log('📝 بيانات التحديث:', updateData);
+
       const { error } = await supabase
         .from('subjects')
-        .update({
-          title: subject.name || subject.title,
-          description: subject.description,
-          image_url: subject.imageUrl,
-          order_index: subject.order,
-          is_active: subject.isActive
-        })
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;
+      console.log('✅ تم تحديث المادة بنجاح');
+      
+      toast({
+        title: "تم التحديث بنجاح",
+        description: "تم تحديث المادة"
+      });
     } catch (error) {
-      console.error('Error updating subject:', error);
+      console.error('❌ خطأ في تحديث المادة:', error);
       toast({
         title: "خطأ في تحديث المادة",
         description: "حدث خطأ أثناء تحديث المادة",
@@ -522,21 +540,34 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
 
   const updateUnit = async (id: string, unit: any) => {
     try {
+      console.log('🔄 تحديث الوحدة:', { id, unit });
+      const updateData: any = {
+        title: unit.name || unit.title,
+        description: unit.description
+      };
+      
+      // Only include fields that exist
+      if (unit.subjectId !== undefined) updateData.subject_id = unit.subjectId;
+      if (unit.imageUrl !== undefined) updateData.image_url = unit.imageUrl;
+      if (unit.order !== undefined) updateData.order_index = unit.order;
+      if (unit.isActive !== undefined) updateData.is_active = unit.isActive;
+
+      console.log('📝 بيانات التحديث:', updateData);
+
       const { error } = await supabase
         .from('units')
-        .update({
-          subject_id: unit.subjectId,
-          title: unit.name || unit.title,
-          description: unit.description,
-          image_url: unit.imageUrl,
-          order_index: unit.order,
-          is_active: unit.isActive
-        })
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;
+      console.log('✅ تم تحديث الوحدة بنجاح');
+      
+      toast({
+        title: "تم التحديث بنجاح",
+        description: "تم تحديث الوحدة"
+      });
     } catch (error) {
-      console.error('Error updating unit:', error);
+      console.error('❌ خطأ في تحديث الوحدة:', error);
       toast({
         title: "خطأ في تحديث الوحدة",
         description: "حدث خطأ أثناء تحديث الوحدة",
@@ -598,26 +629,40 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
 
   const updateLesson = async (id: string, lesson: any) => {
     try {
+      console.log('🔄 تحديث الدرس:', { id, lesson });
       // Get subject_id from the unit
       const unit = units.find(u => u.id === lesson.unitId);
       const subjectId = unit?.subjectId || lesson.subjectId;
 
+      const updateData: any = {
+        title: lesson.name || lesson.title,
+        description: lesson.description
+      };
+      
+      // Only include fields that exist
+      if (lesson.unitId !== undefined) updateData.unit_id = lesson.unitId;
+      if (subjectId) updateData.subject_id = subjectId;
+      if (lesson.videoUrl !== undefined) updateData.video_url = lesson.videoUrl;
+      if (lesson.pdfUrl !== undefined) updateData.pdf_url = lesson.pdfUrl;
+      if (lesson.order !== undefined) updateData.order_index = lesson.order;
+      if (lesson.isActive !== undefined) updateData.is_active = lesson.isActive;
+
+      console.log('📝 بيانات التحديث:', updateData);
+
       const { error } = await supabase
         .from('lessons')
-        .update({
-          unit_id: lesson.unitId,
-          subject_id: subjectId,
-          title: lesson.name || lesson.title,
-          description: lesson.description,
-          video_url: lesson.videoUrl,
-          order_index: lesson.order,
-          is_active: lesson.isActive
-        })
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;
+      console.log('✅ تم تحديث الدرس بنجاح');
+      
+      toast({
+        title: "تم التحديث بنجاح",
+        description: "تم تحديث الدرس"
+      });
     } catch (error) {
-      console.error('Error updating lesson:', error);
+      console.error('❌ خطأ في تحديث الدرس:', error);
       toast({
         title: "خطأ في تحديث الدرس",
         description: "حدث خطأ أثناء تحديث الدرس",

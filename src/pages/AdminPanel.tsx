@@ -4,9 +4,10 @@ import { Routes, Route, useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen, Users, FileText, Star, Bell, Settings, LogOut, BarChart3, Layers, Play, HelpCircle, MapPin } from 'lucide-react';
+import { BookOpen, Users, FileText, Star, Bell, Settings, LogOut, BarChart3, Layers, Play, HelpCircle, MapPin, Sun, Moon } from 'lucide-react';
 import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useToast } from '@/hooks/use-toast';
+import { useTheme } from '@/contexts/ThemeContext';
 import VideoProtection from '@/components/VideoProtection';
 import UserManagement from '@/components/admin/UserManagement';
 import CodeManagement from '@/components/admin/CodeManagement';
@@ -72,7 +73,7 @@ const AdminDashboard = () => {
   return (
     <div>
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-center">لوحة تحكم Smart Edu</h1>
+        <h1 className="text-3xl font-bold text-center">لوحة تحكم المنصة التعليمية</h1>
         <p className="text-center text-muted-foreground mt-2">
           نظرة عامة على النظام
         </p>
@@ -80,7 +81,7 @@ const AdminDashboard = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statsCards.map((card, index) => (
-          <Card key={index}>
+          <Card key={index} className="hover:shadow-lg transition-shadow">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
@@ -88,8 +89,8 @@ const AdminDashboard = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{card.value}</p>
-              <p className="text-xs text-muted-foreground">{card.description}</p>
+              <p className="text-3xl font-bold">{card.value}</p>
+              <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
             </CardContent>
           </Card>
         ))}
@@ -116,10 +117,10 @@ const AdminSidebar = () => {
   ];
 
   return (
-    <div className="bg-white shadow-lg w-64 min-h-screen p-4">
+    <div className="bg-card shadow-lg w-64 min-h-screen p-4 border-r">
       <div className="mb-8">
-        <h2 className="text-xl font-bold text-primary">Smart Edu Admin</h2>
-        <p className="text-sm text-gray-600">لوحة التحكم</p>
+        <h2 className="text-xl font-bold text-primary">المنصة التعليمية</h2>
+        <p className="text-sm text-muted-foreground">لوحة التحكم</p>
       </div>
       
       <nav className="space-y-2">
@@ -127,10 +128,10 @@ const AdminSidebar = () => {
           <Link
             key={item.path}
             to={item.path}
-            className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+            className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
               location.pathname === item.path
-                ? 'bg-primary text-white'
-                : 'text-gray-700 hover:bg-gray-100'
+                ? 'bg-primary text-primary-foreground shadow-md'
+                : 'text-foreground hover:bg-accent hover:text-accent-foreground'
             }`}
           >
             {item.icon}
@@ -146,6 +147,7 @@ const AdminPanel: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme, toggleTheme } = useTheme();
 
   React.useEffect(() => {
     if (!user || !user.isAdmin) {
@@ -158,7 +160,7 @@ const AdminPanel: React.FC = () => {
     navigate('/');
     toast({
       title: "تم تسجيل الخروج",
-      description: "شكراً لاستخدامك لوحة تحكم Smart Edu"
+      description: "شكراً لاستخدامك المنصة التعليمية"
     });
   };
 
@@ -168,19 +170,29 @@ const AdminPanel: React.FC = () => {
 
   return (
     <VideoProtection>
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen bg-background flex">
         <AdminSidebar />
         
         <div className="flex-1 p-6">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-2xl font-bold">لوحة تحكم Smart Edu</h1>
+              <h1 className="text-2xl font-bold">لوحة تحكم المنصة التعليمية</h1>
               <p className="text-muted-foreground">مرحباً {user?.fullName}</p>
             </div>
-            <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 ml-2" />
-              تسجيل الخروج
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={toggleTheme}
+                title={theme === 'light' ? 'الوضع الداكن' : 'الوضع الساطع'}
+              >
+                {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+              </Button>
+              <Button variant="outline" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 ml-2" />
+                تسجيل الخروج
+              </Button>
+            </div>
           </div>
           
           <Routes>

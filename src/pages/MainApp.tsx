@@ -88,6 +88,10 @@ const HomePage = () => {
 
   return (
     <div className="container mx-auto p-6">
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold mb-2">المنصة التعليمية</h1>
+        <p className="text-lg text-muted-foreground">رحلتك نحو النجاح تبدأ من هنا</p>
+      </div>
       <section>
         <h2 className="text-xl font-semibold mb-4 text-center">المواد الدراسية</h2>
         
@@ -101,33 +105,33 @@ const HomePage = () => {
             {subjects.filter(s => s.is_active).sort((a, b) => a.order_index - b.order_index).map((subject) => (
               <Card 
                 key={subject.id}
-                className="overflow-hidden hover:shadow-lg transition-shadow"
-                style={{ borderLeft: `4px solid ${subject.color}` }}
+                className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 border-l-4"
+                style={{ borderLeftColor: subject.color }}
               >
                 <CardContent className="p-6">
                   <div className="flex items-center mb-4">
                     <div 
-                      className="w-12 h-12 rounded-full flex items-center justify-center mr-4"
+                      className="w-14 h-14 rounded-xl flex items-center justify-center mr-4 shadow-md"
                       style={{ backgroundColor: `${subject.color}20` }}
                     >
-                      <span className="text-2xl">{subject.icon}</span>
+                      <span className="text-3xl">{subject.icon}</span>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-lg">{subject.name}</h3>
-                      <p className="text-muted-foreground text-sm">{subject.description}</p>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg mb-1">{subject.name}</h3>
+                      <p className="text-muted-foreground text-sm line-clamp-2">{subject.description}</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 gap-2">
+                  <div className="grid grid-cols-1 gap-2 mt-4">
                     <Button 
                       onClick={() => handleUnitsClick(subject)}
                       variant="outline"
-                      className="w-full"
+                      className="w-full hover:bg-primary hover:text-primary-foreground transition-colors"
                     >
                       عرض الوحدات
                     </Button>
                     <Button 
                       onClick={() => handleQuizzesClick(subject)}
-                      className="w-full"
+                      className="w-full shadow-sm"
                     >
                       عرض الاختبارات
                     </Button>

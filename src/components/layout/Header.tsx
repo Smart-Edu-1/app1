@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Bell, Menu } from 'lucide-react';
+import { Bell, Menu, Sun, Moon } from 'lucide-react';
 import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import Sidebar from './Sidebar';
 
 const Header: React.FC = () => {
@@ -13,6 +14,7 @@ const Header: React.FC = () => {
   const { notifications } = useSupabaseAppData();
   const { user } = useAuth();
   const { appName } = useAppSettings();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const unreadCount = notifications.filter(n => 
@@ -21,7 +23,7 @@ const Header: React.FC = () => {
 
   return (
     <>
-      <header className="bg-white shadow-sm border-b p-4">
+      <header className="bg-card shadow-sm border-b p-4">
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"
@@ -31,21 +33,32 @@ const Header: React.FC = () => {
             <Menu className="h-6 w-6" />
           </Button>
 
-          <h1 className="text-xl font-bold text-center flex-1">{appName}</h1>
+          <h1 className="text-xl font-bold text-center flex-1">{appName || 'المنصة التعليمية'}</h1>
 
-          <div className="relative">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate('/app/notifications')}
+              onClick={toggleTheme}
+              title={theme === 'light' ? 'الوضع الداكن' : 'الوضع الساطع'}
             >
-              <Bell className="h-6 w-6" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
+              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             </Button>
+            
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/app/notifications')}
+              >
+                <Bell className="h-6 w-6" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </header>

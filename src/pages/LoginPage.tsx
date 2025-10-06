@@ -104,8 +104,8 @@ const LoginPage = () => {
               <div className="mx-auto mb-4 w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
                 <BookOpen className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle className="text-2xl font-bold">Smart Edu</CardTitle>
-              <CardDescription>تسجيل الدخول إلى حسابك</CardDescription>
+              <CardTitle className="text-2xl font-bold">المنصة التعليمية</CardTitle>
+              <CardDescription>رحلتك نحو النجاح تبدأ من هنا</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-4">
@@ -174,9 +174,9 @@ const LoginPage = () => {
             <div className="mx-auto mb-4 w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center">
               <BookOpen className="h-10 w-10 text-primary" />
             </div>
-            <CardTitle className="text-3xl font-bold">Smart Edu</CardTitle>
+            <CardTitle className="text-3xl font-bold">المنصة التعليمية</CardTitle>
             <CardDescription className="text-lg">
-              منصة التعليم الذكية
+              رحلتك نحو النجاح تبدأ من هنا
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

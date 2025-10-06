@@ -237,8 +237,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       // Load app settings
       const { data: settingsData, error: settingsError } = await supabase
         .from('app_settings')
-        .select('*')
-        .single();
+        .select('*');
 
       console.log('⚙️ بيانات الإعدادات:', settingsData, 'خطأ:', settingsError);
 
@@ -258,7 +257,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       
       // تحويل الإعدادات من key/value إلى كائن
       const transformedSettings: any = {};
-      const settingsArray = Array.isArray(settingsData) ? settingsData : (settingsData ? [settingsData] : []);
+      const settingsArray = Array.isArray(settingsData) ? settingsData : [];
       
       if (settingsArray.length > 0) {
         settingsArray.forEach((setting: any) => {
@@ -270,7 +269,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
         });
       }
       
-      const appSettings = {
+      const finalAppSettings = {
         appName: transformedSettings.appName || 'Smart Edu',
         aboutText: transformedSettings.aboutText || '',
         subscriptionPrices: transformedSettings.subscriptionPrices || {
@@ -316,7 +315,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       setUsers(transformedUsers);
       setNotifications(transformedNotifications);
       setDistributionCenters(transformedCenters);
-      setAppSettings(transformedSettings);
+      setAppSettings(finalAppSettings);
     } catch (error) {
       console.error('💥 خطأ في تحميل البيانات:', error);
       toast({
@@ -901,54 +900,26 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     try {
       console.log('🔄 تحديث إعدادات التطبيق:', settings);
       
-      // First try to get existing settings to get the correct ID
-      const { data: existingSettings, error: fetchError } = await supabase
-        .from('app_settings')
-        .select('id')
-        .limit(1);
+      // تحديث أو إنشاء كل إعداد باستخدام upsert
+      const updates = Object.entries(settings).map(([key, value]) => ({
+        key,
+        value: JSON.stringify(value),
+        updated_at: new Date().toISOString()
+      }));
 
-      console.log('📋 السجلات الموجودة:', existingSettings, 'خطأ:', fetchError);
-
-      if (fetchError) {
-        console.error('❌ خطأ في جلب الإعدادات:', fetchError);
-        throw fetchError;
-      }
-
-      if (!existingSettings || existingSettings.length === 0) {
-        // إنشاء إعدادات جديدة بتنسيق key/value
-        const settingsToInsert = [
-          { key: 'appName', value: JSON.stringify(settings.appName) },
-          { key: 'aboutText', value: JSON.stringify(settings.aboutText) },
-          { key: 'subscriptionPrices', value: JSON.stringify(settings.subscriptionPrices) },
-          { key: 'themeColors', value: JSON.stringify(settings.themeColors) },
-          { key: 'contactMethods', value: JSON.stringify(settings.contactMethods || []) },
-          { key: 'subscriptionPlans', value: JSON.stringify(settings.subscriptionPlans || []) },
-          { key: 'supportContacts', value: JSON.stringify(settings.supportContacts || {}) },
-          { key: 'contactPageTitle', value: JSON.stringify(settings.contactPageTitle || 'تواصل معنا') },
-          { key: 'contactPageDescription', value: JSON.stringify(settings.contactPageDescription || 'نحن هنا لمساعدتك في أي وقت') },
-          { key: 'workingHoursTitle', value: JSON.stringify(settings.workingHoursTitle || 'أوقات العمل') },
-          { key: 'workingHours', value: JSON.stringify(settings.workingHours || []) },
-          { key: 'adminCredentials', value: JSON.stringify(settings.adminCredentials || {}) }
-        ];
-        
-        const { error: insertError } = await supabase
+      // استخدام upsert لكل إعداد
+      for (const update of updates) {
+        const { error } = await supabase
           .from('app_settings')
-          .insert(settingsToInsert);
+          .upsert(update, { 
+            onConflict: 'key',
+            ignoreDuplicates: false 
+          });
         
-        if (insertError) {
-          console.error('❌ خطأ في إنشاء الإعدادات:', insertError);
-          throw insertError;
+        if (error) {
+          console.error('❌ خطأ في تحديث الإعداد:', update.key, error);
+          throw error;
         }
-        console.log('✅ تم إنشاء الإعدادات');
-      } else {
-        // تحديث الإعدادات الموجودة
-        for (const [key, value] of Object.entries(settings)) {
-          const jsonValue = JSON.stringify(value);
-          await supabase
-            .from('app_settings')
-            .upsert({ key, value: jsonValue }, { onConflict: 'key' });
-        }
-        console.log('✅ تم تحديث الإعدادات');
       }
       
       console.log('✅ تم تحديث الإعدادات بنجاح');

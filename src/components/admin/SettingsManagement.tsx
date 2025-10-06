@@ -7,12 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Settings, Save, Palette, Plus, Edit, Trash2, Eye, EyeOff, Shield } from 'lucide-react';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionPlan } from '@/types';
 
 const SettingsManagement = () => {
-  const { settings, updateSettings } = useAppData();
+  const { appSettings: settings, updateAppSettings: updateSettings } = useSupabaseAppData();
   const { toast } = useToast();
   const [formData, setFormData] = useState(() => ({
     ...settings,

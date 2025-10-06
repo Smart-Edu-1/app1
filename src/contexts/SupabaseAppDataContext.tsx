@@ -92,6 +92,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
   // Transform Supabase snake_case to camelCase
   const transformSubject = (subject: any) => ({
     ...subject,
+    name: subject.title,
     imageUrl: subject.image_url,
     order: subject.order_index,
     isActive: subject.is_active,
@@ -100,6 +101,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
 
   const transformUnit = (unit: any) => ({
     ...unit,
+    name: unit.title,
     subjectId: unit.subject_id,
     imageUrl: unit.image_url,
     order: unit.order_index,
@@ -155,7 +157,9 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     ...center,
     workingHours: center.working_hours,
     orderIndex: center.order_index,
+    order_index: center.order_index, // Keep both for compatibility
     isActive: center.is_active,
+    is_active: center.is_active, // Keep both for compatibility
     createdAt: center.created_at
   });
 
@@ -452,10 +456,8 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       const { error } = await supabase
         .from('subjects')
         .update({
-          name: subject.name,
+          title: subject.name || subject.title,
           description: subject.description,
-          icon: subject.icon,
-          color: subject.color,
           image_url: subject.imageUrl,
           order_index: subject.order,
           is_active: subject.isActive
@@ -525,7 +527,7 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
         .from('units')
         .update({
           subject_id: unit.subjectId,
-          name: unit.name,
+          title: unit.name || unit.title,
           description: unit.description,
           image_url: unit.imageUrl,
           order_index: unit.order,
@@ -565,19 +567,20 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
   // Lesson functions
   const addLesson = async (lesson: any) => {
     try {
+      // Get subject_id from the unit
+      const unit = units.find(u => u.id === lesson.unitId);
+      const subjectId = unit?.subjectId || lesson.subjectId;
+
       const { data, error } = await supabase
         .from('lessons')
         .insert({
           unit_id: lesson.unitId,
-          subject_id: lesson.subjectId,
+          subject_id: subjectId,
           title: lesson.name || lesson.title,
           description: lesson.description,
-          content: lesson.content,
           video_url: lesson.videoUrl,
-          image_url: lesson.imageUrl,
           order_index: lesson.order,
-          is_free: !lesson.isPremium,
-          is_active: lesson.isActive
+          is_active: lesson.isActive !== undefined ? lesson.isActive : true
         })
         .select()
         .single();
@@ -596,17 +599,19 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
 
   const updateLesson = async (id: string, lesson: any) => {
     try {
+      // Get subject_id from the unit
+      const unit = units.find(u => u.id === lesson.unitId);
+      const subjectId = unit?.subjectId || lesson.subjectId;
+
       const { error } = await supabase
         .from('lessons')
         .update({
           unit_id: lesson.unitId,
-          title: lesson.name,
+          subject_id: subjectId,
+          title: lesson.name || lesson.title,
           description: lesson.description,
-          content: lesson.content,
           video_url: lesson.videoUrl,
-          image_url: lesson.imageUrl,
           order_index: lesson.order,
-          is_free: !lesson.isPremium,
           is_active: lesson.isActive
         })
         .eq('id', id);

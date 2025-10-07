@@ -96,7 +96,9 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     imageUrl: subject.image_url,
     order: subject.order_index,
     isActive: subject.is_active,
-    createdAt: subject.created_at
+    createdAt: subject.created_at,
+    icon: subject.icon || '📚',
+    color: subject.color || '#3B82F6'
   });
 
   const transformUnit = (unit: any) => ({
@@ -116,7 +118,8 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     videoUrl: lesson.video_url,
     imageUrl: lesson.image_url,
     order: lesson.order_index,
-    isPremium: !lesson.is_free,
+    isPremium: lesson.is_premium ?? false,
+    teacherContact: lesson.teacher_contact || '',
     isActive: lesson.is_active,
     createdAt: lesson.created_at
   });
@@ -433,7 +436,9 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
           description: subject.description,
           image_url: subject.imageUrl || subject.image_url,
           is_active: subject.isActive !== undefined ? subject.isActive : true,
-          order_index: subject.orderIndex || subject.order || 0
+          order_index: subject.orderIndex || subject.order || 0,
+          icon: subject.icon || '📚',
+          color: subject.color || '#3B82F6'
         })
         .select()
         .single();
@@ -610,7 +615,9 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
           description: lesson.description,
           video_url: lesson.videoUrl,
           order_index: lesson.order,
-          is_active: lesson.isActive !== undefined ? lesson.isActive : true
+          is_active: lesson.isActive !== undefined ? lesson.isActive : true,
+          is_premium: lesson.isPremium ?? false,
+          teacher_contact: lesson.teacherContact || ''
         })
         .select()
         .single();
@@ -646,6 +653,8 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       if (lesson.pdfUrl !== undefined) updateData.pdf_url = lesson.pdfUrl;
       if (lesson.order !== undefined) updateData.order_index = lesson.order;
       if (lesson.isActive !== undefined) updateData.is_active = lesson.isActive;
+      if (lesson.isPremium !== undefined) updateData.is_premium = lesson.isPremium;
+      if (lesson.teacherContact !== undefined) updateData.teacher_contact = lesson.teacherContact;
 
       console.log('📝 بيانات التحديث:', updateData);
 

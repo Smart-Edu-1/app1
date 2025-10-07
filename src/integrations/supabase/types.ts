@@ -122,9 +122,11 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean | null
+          is_premium: boolean | null
           order_index: number | null
           pdf_url: string | null
           subject_id: string
+          teacher_contact: string | null
           title: string
           unit_id: string
           video_url: string | null
@@ -134,9 +136,11 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          is_premium?: boolean | null
           order_index?: number | null
           pdf_url?: string | null
           subject_id: string
+          teacher_contact?: string | null
           title: string
           unit_id: string
           video_url?: string | null
@@ -146,9 +150,11 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          is_premium?: boolean | null
           order_index?: number | null
           pdf_url?: string | null
           subject_id?: string
+          teacher_contact?: string | null
           title?: string
           unit_id?: string
           video_url?: string | null
@@ -342,8 +348,10 @@ export type Database = {
       }
       subjects: {
         Row: {
+          color: string | null
           created_at: string | null
           description: string | null
+          icon: string | null
           id: string
           image_url: string | null
           is_active: boolean | null
@@ -351,8 +359,10 @@ export type Database = {
           title: string
         }
         Insert: {
+          color?: string | null
           created_at?: string | null
           description?: string | null
+          icon?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
@@ -360,8 +370,10 @@ export type Database = {
           title: string
         }
         Update: {
+          color?: string | null
           created_at?: string | null
           description?: string | null
+          icon?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null

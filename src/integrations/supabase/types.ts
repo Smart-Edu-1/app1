@@ -127,9 +127,11 @@ export type Database = {
           pdf_url: string | null
           subject_id: string
           teacher_contact: string | null
+          thumbnail_path: string | null
           title: string
           unit_id: string
           video_url: string | null
+          youtube_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -141,9 +143,11 @@ export type Database = {
           pdf_url?: string | null
           subject_id: string
           teacher_contact?: string | null
+          thumbnail_path?: string | null
           title: string
           unit_id: string
           video_url?: string | null
+          youtube_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -155,9 +159,11 @@ export type Database = {
           pdf_url?: string | null
           subject_id?: string
           teacher_contact?: string | null
+          thumbnail_path?: string | null
           title?: string
           unit_id?: string
           video_url?: string | null
+          youtube_id?: string | null
         }
         Relationships: [
           {

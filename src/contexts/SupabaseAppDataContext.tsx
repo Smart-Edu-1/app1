@@ -116,6 +116,8 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     name: lesson.title,
     unitId: lesson.unit_id,
     videoUrl: lesson.video_url,
+    youtubeId: lesson.youtube_id,
+    thumbnailPath: lesson.thumbnail_path,
     imageUrl: lesson.image_url,
     order: lesson.order_index,
     isPremium: lesson.is_premium ?? false,
@@ -606,19 +608,25 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       const unit = units.find(u => u.id === lesson.unitId);
       const subjectId = unit?.subjectId || lesson.subjectId;
 
+      const insertData: any = {
+        unit_id: lesson.unitId,
+        subject_id: subjectId,
+        title: lesson.name || lesson.title,
+        description: lesson.description,
+        order_index: lesson.order,
+        is_active: lesson.isActive !== undefined ? lesson.isActive : true,
+        is_premium: lesson.isPremium ?? false,
+        teacher_contact: lesson.teacherContact || ''
+      };
+
+      // Add optional fields only if they exist
+      if (lesson.videoUrl) insertData.video_url = lesson.videoUrl;
+      if (lesson.youtubeId) insertData.youtube_id = lesson.youtubeId;
+      if (lesson.thumbnailPath) insertData.thumbnail_path = lesson.thumbnailPath;
+
       const { data, error } = await supabase
         .from('lessons')
-        .insert({
-          unit_id: lesson.unitId,
-          subject_id: subjectId,
-          title: lesson.name || lesson.title,
-          description: lesson.description,
-          video_url: lesson.videoUrl,
-          order_index: lesson.order,
-          is_active: lesson.isActive !== undefined ? lesson.isActive : true,
-          is_premium: lesson.isPremium ?? false,
-          teacher_contact: lesson.teacherContact || ''
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -650,6 +658,8 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
       if (lesson.unitId !== undefined) updateData.unit_id = lesson.unitId;
       if (subjectId) updateData.subject_id = subjectId;
       if (lesson.videoUrl !== undefined) updateData.video_url = lesson.videoUrl;
+      if (lesson.youtubeId !== undefined) updateData.youtube_id = lesson.youtubeId;
+      if (lesson.thumbnailPath !== undefined) updateData.thumbnail_path = lesson.thumbnailPath;
       if (lesson.pdfUrl !== undefined) updateData.pdf_url = lesson.pdfUrl;
       if (lesson.order !== undefined) updateData.order_index = lesson.order;
       if (lesson.isActive !== undefined) updateData.is_active = lesson.isActive;

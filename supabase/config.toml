@@ -1,1 +1,4 @@
 project_id = "cvsjqnpobluwcwqkqmuu"
+
+[functions.authorize-video]
+verify_jwt = false

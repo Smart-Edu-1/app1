@@ -7,7 +7,7 @@ import { ArrowLeft, MessageSquare, Lock, Play, Phone, Mail } from 'lucide-react'
 import { useSupabaseAppData } from '@/contexts/SupabaseAppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import VideoProtection from '@/components/VideoProtection';
-import VideoPlayer from '@/components/VideoPlayer';
+import SecureVideoPlayer from '@/components/SecureVideoPlayer';
 import { useToast } from '@/hooks/use-toast';
 
 const LessonPage: React.FC = () => {
@@ -109,22 +109,22 @@ const LessonPage: React.FC = () => {
             </CardHeader>
           </Card>
 
-          {/* Video Player */}
+          {/* Secure Video Player */}
           <Card className="mb-6">
             <CardContent className="p-0">
               <div className="aspect-video">
-                {lesson.video_url && canAccessPremium ? (
-                  <VideoPlayer
-                    src={lesson.video_url}
+                {canAccessPremium ? (
+                  <SecureVideoPlayer
+                    lessonId={lesson.id}
+                    thumbnailUrl={lesson.thumbnail_path}
                     title={lesson.title}
-                    onError={() => console.error('خطأ في تحميل الفيديو')}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground">
                     <div className="text-center">
-                      <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                      <p className="text-xl mb-2">لا يوجد فيديو متاح حالياً</p>
-                      <p className="text-muted-foreground">سيتم إضافة الفيديو قريباً</p>
+                      <Lock className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                      <p className="text-xl mb-2">محتوى مدفوع</p>
+                      <p className="text-muted-foreground">اشترك للوصول إلى هذا الدرس</p>
                     </div>
                   </div>
                 )}

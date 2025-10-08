@@ -33,9 +33,9 @@ const LessonPage: React.FC = () => {
   }
 
   // Check if user can access premium content
-  const canAccessPremium = isPremiumUser || lesson.is_free;
+  const canAccessPremium = isPremiumUser || !lesson.isPremium;
 
-  if (!lesson.is_free && (isGuest || !isPremiumUser)) {
+  if (lesson.isPremium && (isGuest || !isPremiumUser)) {
     return (
       <div className="container mx-auto p-6">
         <Button

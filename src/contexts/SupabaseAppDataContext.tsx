@@ -115,12 +115,14 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
     ...lesson,
     name: lesson.title,
     unitId: lesson.unit_id,
+    subjectId: lesson.subject_id,
     videoUrl: lesson.video_url,
     youtubeId: lesson.youtube_id,
     thumbnailPath: lesson.thumbnail_path,
     imageUrl: lesson.image_url,
     order: lesson.order_index,
     isPremium: lesson.is_premium ?? false,
+    is_free: !(lesson.is_premium ?? false), // إضافة is_free للتوافق
     teacherContact: lesson.teacher_contact || '',
     isActive: lesson.is_active,
     createdAt: lesson.created_at

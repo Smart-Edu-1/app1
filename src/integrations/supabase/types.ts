@@ -362,6 +362,9 @@ export type Database = {
           image_url: string | null
           is_active: boolean | null
           order_index: number | null
+          teacher_email: string | null
+          teacher_phone: string | null
+          teacher_whatsapp: string | null
           title: string
         }
         Insert: {
@@ -373,6 +376,9 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           order_index?: number | null
+          teacher_email?: string | null
+          teacher_phone?: string | null
+          teacher_whatsapp?: string | null
           title: string
         }
         Update: {
@@ -384,6 +390,9 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           order_index?: number | null
+          teacher_email?: string | null
+          teacher_phone?: string | null
+          teacher_whatsapp?: string | null
           title?: string
         }
         Relationships: []

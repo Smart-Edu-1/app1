@@ -135,6 +135,8 @@ const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
           iv_load_policy: 3,
           disablekb: 1,
           fs: 1,
+          showinfo: 0,
+          cc_load_policy: 0,
           origin: window.location.origin
         },
         events: {
@@ -259,6 +261,11 @@ const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
               MozUserSelect: 'none',
               msUserSelect: 'none'
             }}
+          />
+          {/* Overlay to hide YouTube branding elements */}
+          <div 
+            className="absolute top-0 left-0 right-0 h-12 pointer-events-none z-10"
+            style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 100%)' }}
           />
           {error && (
             <div className="absolute inset-0 bg-black/80 flex items-center justify-center p-4">

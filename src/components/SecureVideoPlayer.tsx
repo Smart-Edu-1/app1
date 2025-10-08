@@ -4,6 +4,14 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// Declare YouTube IFrame API types
+declare global {
+  interface Window {
+    YT: any;
+    onYouTubeIframeAPIReady: () => void;
+  }
+}
+
 interface SecureVideoPlayerProps {
   lessonId: string;
   thumbnailUrl?: string;
@@ -21,14 +29,41 @@ const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [apiReady, setApiReady] = useState(false);
+  const playerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Cleanup function to remove iframe
-  const cleanupIframe = () => {
-    if (iframeRef.current) {
-      iframeRef.current.remove();
+  // Load YouTube IFrame API
+  useEffect(() => {
+    // Check if API is already loaded
+    if (window.YT && window.YT.Player) {
+      setApiReady(true);
+      return;
+    }
+
+    // Load the IFrame Player API code asynchronously
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+
+    // Set up callback for when API is ready
+    window.onYouTubeIframeAPIReady = () => {
+      setApiReady(true);
+    };
+  }, []);
+
+  // Cleanup function
+  const cleanupPlayer = () => {
+    if (playerRef.current) {
+      try {
+        playerRef.current.destroy();
+      } catch (e) {
+        console.error('Error destroying player:', e);
+      }
+      playerRef.current = null;
     }
     setYoutubeId(null);
     setIsPlaying(false);
@@ -54,13 +89,13 @@ const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
         throw new Error(data.error || 'فشل في الحصول على بيانات الفيديو');
       }
 
-      // Store youtube ID temporarily (will be cleared on component unmount)
+      // Store youtube ID and wait for API to be ready
       setYoutubeId(data.youtubeId);
       setIsPlaying(true);
 
       // Auto-cleanup after token expires
       setTimeout(() => {
-        cleanupIframe();
+        cleanupPlayer();
         toast({
           title: "انتهت الجلسة",
           description: "انقر على زر التشغيل مرة أخرى لمواصلة المشاهدة",
@@ -80,10 +115,68 @@ const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
     }
   };
 
+  // Create YouTube player when ready
+  useEffect(() => {
+    if (!apiReady || !youtubeId || !playerContainerRef.current || playerRef.current) {
+      return;
+    }
+
+    try {
+      playerRef.current = new window.YT.Player(playerContainerRef.current, {
+        height: '100%',
+        width: '100%',
+        videoId: youtubeId,
+        playerVars: {
+          autoplay: 1,
+          controls: 1,
+          rel: 0,
+          modestbranding: 1,
+          playsinline: 1,
+          iv_load_policy: 3,
+          disablekb: 1,
+          fs: 1,
+          origin: window.location.origin
+        },
+        events: {
+          onError: (event: any) => {
+            console.error('YouTube Player Error:', event.data);
+            let errorMessage = 'حدث خطأ في تحميل الفيديو';
+            
+            switch (event.data) {
+              case 2:
+                errorMessage = 'معرف الفيديو غير صحيح';
+                break;
+              case 5:
+                errorMessage = 'خطأ في مشغل HTML5';
+                break;
+              case 100:
+                errorMessage = 'الفيديو غير موجود أو تم حذفه';
+                break;
+              case 101:
+              case 150:
+                errorMessage = 'صاحب الفيديو لا يسمح بتشغيله على مواقع أخرى. يرجى تغيير إعدادات الفيديو في YouTube';
+                break;
+            }
+            
+            setError(errorMessage);
+            toast({
+              title: "خطأ في تشغيل الفيديو",
+              description: errorMessage,
+              variant: "destructive"
+            });
+          }
+        }
+      });
+    } catch (err) {
+      console.error('Error creating player:', err);
+      setError('فشل في إنشاء مشغل الفيديو');
+    }
+  }, [apiReady, youtubeId, toast]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      cleanupIframe();
+      cleanupPlayer();
     };
   }, []);
 
@@ -155,33 +248,36 @@ const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
           )}
         </div>
       ) : youtubeId ? (
-        // Dynamic iframe (created only after authorization)
-        <div className="relative w-full h-full">
-          <iframe
-            ref={iframeRef}
-            src={`https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1&controls=1&playsinline=1&iv_load_policy=3&disablekb=1`}
-            title={title}
+        // YouTube Player Container (API will inject player here)
+        <div className="relative w-full h-full bg-black">
+          <div 
+            ref={playerContainerRef}
             className="w-full h-full"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen={false}
-            referrerPolicy="no-referrer"
             style={{
-              pointerEvents: 'auto',
               userSelect: 'none',
               WebkitUserSelect: 'none',
               MozUserSelect: 'none',
               msUserSelect: 'none'
             }}
-            onContextMenu={(e) => e.preventDefault()}
           />
-          {/* Protection overlay */}
-          <div 
-            className="absolute inset-0 pointer-events-none"
-            style={{ zIndex: 1 }}
-            onContextMenu={(e) => e.preventDefault()}
-            onDragStart={(e) => e.preventDefault()}
-          />
+          {error && (
+            <div className="absolute inset-0 bg-black/80 flex items-center justify-center p-4">
+              <div className="text-center text-white">
+                <Lock className="h-12 w-12 mx-auto mb-4 text-red-500" />
+                <p className="text-lg mb-2">{error}</p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    cleanupPlayer();
+                    setError(null);
+                  }}
+                  className="mt-4"
+                >
+                  إعادة المحاولة
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       ) : null}
     </div>

@@ -442,7 +442,10 @@ export const SupabaseAppDataProvider: React.FC<SupabaseAppDataProviderProps> = (
           is_active: subject.isActive !== undefined ? subject.isActive : true,
           order_index: subject.orderIndex || subject.order || 0,
           icon: subject.icon || '📚',
-          color: subject.color || '#3B82F6'
+          color: subject.color || '#3B82F6',
+          teacher_phone: subject.teacher_phone || null,
+          teacher_email: subject.teacher_email || null,
+          teacher_whatsapp: subject.teacher_whatsapp || null
         })
         .select()
         .single();
